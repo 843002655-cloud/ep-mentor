@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import AppLayout from "@/components/AppLayout";
+import HeartModel from "@/components/HeartModel";
 import { caseService, chatService, progressService } from "@/lib/services";
 import type { CaseInput } from "@/lib/services";
 import { ROUTES } from "@/lib/routes";
@@ -164,23 +165,28 @@ export default function CaseDetailPage() {
         )}
 
         {activeStep === 1 && (
-          <div className="card mb-6">
-            <h2 className="text-xl font-semibold text-[#1A2332] mb-4 font-serif">🫀 导管放置与腔内电图</h2>
-            <div className="grid sm:grid-cols-2 gap-4 mb-4">
-              <div className="bg-[#F5F8FC] rounded-lg p-4 text-center">
-                <div className="text-4xl mb-2">🫀</div>
-                <p className="text-xs text-[#6B7F96]">HRA · HIS · CS · RV 导管位置示意</p>
-                <p className="text-xs text-[#8FA0B4] mt-1">（腔内图占位 — 后续替换为 SVG/图片）</p>
+          <div className="space-y-6 mb-6">
+            <div className="card">
+              <h2 className="text-xl font-semibold text-[#1A2332] mb-4 font-serif">🫀 导管放置与腔内电图</h2>
+              <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                <div className="bg-[#F5F8FC] rounded-lg p-4 text-center">
+                  <div className="text-4xl mb-2">🫀</div>
+                  <p className="text-xs text-[#6B7F96]">HRA · HIS · CS · RV 导管位置示意</p>
+                  <p className="text-xs text-[#8FA0B4] mt-1">（腔内图占位 — 后续替换为 SVG/图片）</p>
+                </div>
+                <div className="bg-[#F5F8FC] rounded-lg p-4 text-center">
+                  <div className="text-4xl mb-2">📊</div>
+                  <p className="text-xs text-[#6B7F96]">标准四腔 EGM 记录</p>
+                  <p className="text-xs text-[#8FA0B4] mt-1">HRA d 3-4 · His p 3-4 · CS 9,10 → 1,2 · RVa 3-4</p>
+                </div>
               </div>
-              <div className="bg-[#F5F8FC] rounded-lg p-4 text-center">
-                <div className="text-4xl mb-2">📊</div>
-                <p className="text-xs text-[#6B7F96]">标准四腔 EGM 记录</p>
-                <p className="text-xs text-[#8FA0B4] mt-1">HRA d 3-4 · His p 3-4 · CS 9,10 → 1,2 · RVa 3-4</p>
-              </div>
+              <button onClick={() => { startAITutor(); }} className="text-sm text-[#1B4F8A] font-medium hover:underline">
+                继续让 AI 导师引导分析 →
+              </button>
             </div>
-            <button onClick={() => { startAITutor(); }} className="text-sm text-[#1B4F8A] font-medium hover:underline">
-              继续让 AI 导师引导分析 →
-            </button>
+
+            {/* 3D Heart Model */}
+            <HeartModel className="shadow-lg" />
           </div>
         )}
 
