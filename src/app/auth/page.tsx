@@ -32,7 +32,7 @@ function AuthForm() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const redirect = searchParams.get("redirect") || "/cases";
-  const [email, setEmail] = useState("843002655@qq.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("resident");
   const [interests, setInterests] = useState<string[]>([]);
