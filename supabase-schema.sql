@@ -254,3 +254,33 @@ INSERT INTO quiz_questions (question, options, correct, explanation, category) V
   'Brugada 综合征的特征是右胸导联（V1-V3）ST 段抬高，最常见与 SCN5A 基因突变相关。ICD 是高危患者的一线治疗。',
   '综合'
 );
+
+-- ============================================================
+-- 9. 每日对话配额表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS usage_logs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  ip_address TEXT,
+  date DATE DEFAULT CURRENT_DATE,
+  chat_count INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, date)
+);
+
+-- 匿名用户（未登录）按 IP 去重
+CREATE UNIQUE INDEX IF NOT EXISTS idx_usage_logs_ip_date ON usage_logs(ip_address, date) WHERE user_id IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_usage_logs_user_date ON usage_logs(user_id, date);
+CREATE INDEX IF NOT EXISTS idx_usage_logs_ip ON usage_logs(ip_address, date);
+
+ALTER TABLE usage_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can read own usage" ON usage_logs;
+CREATE POLICY "Users can read own usage" ON usage_logs
+  FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Admin can read all usage" ON usage_logs;
+CREATE POLICY "Admin can read all usage" ON usage_logs
+  FOR SELECT USING (auth.email() = current_setting('app.settings.admin_email', true));
+DROP POLICY IF EXISTS "Service can upsert usage" ON usage_logs;
+CREATE POLICY "Service can upsert usage" ON usage_logs
+  FOR ALL USING (true) WITH CHECK (true);

@@ -19,6 +19,11 @@ export interface CaseContext {
   hint: string;
 }
 
+export interface QuotaInfo {
+  remaining: number;
+  total: number;
+}
+
 async function request<T>(url: string, body: unknown): Promise<T> {
   const res = await fetch(url, {
     method: "POST",
@@ -36,14 +41,12 @@ export const chatService = {
     messages: Message[],
     caseContext: CaseContext,
     caseId: string
-  ): Promise<string> {
-    const data = await request<{ reply: string }>(ROUTES.API_CHAT, {
-      caseContext,
-      messages,
-      caseId,
-      stream: false,
-    });
-    return data.reply;
+  ): Promise<{ reply: string; quota?: QuotaInfo }> {
+    const data = await request<{ reply: string; quota?: QuotaInfo }>(
+      ROUTES.API_CHAT,
+      { caseContext, messages, caseId, stream: false }
+    );
+    return { reply: data.reply, quota: data.quota };
   },
 
   /** 流式发送消息（stream: true）— Web 专用 */
@@ -77,11 +80,7 @@ export const chatService = {
   },
 
   /** AI 生成案例（管理员用） */
-  async generateCase(
-    category: string,
-    difficulty: string,
-    count: number = 1
-  ) {
+  async generateCase(category: string, difficulty: string, count = 1) {
     const data = await request<{ cases: object[] }>(ROUTES.API_GENERATE_CASE, {
       category,
       difficulty,
