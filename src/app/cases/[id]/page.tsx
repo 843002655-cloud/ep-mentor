@@ -45,6 +45,7 @@ export default function CaseDetailPage() {
   const [diagnosisRevealed, setDiagnosisRevealed] = useState(false);
   const [quota, setQuota] = useState<{ remaining: number; total: number } | null>(null);
   const [quotaExhausted, setQuotaExhausted] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -55,6 +56,8 @@ export default function CaseDetailPage() {
     });
     progressService.getQuota().then((d) => {
       if (d.total) { setQuota({ remaining: d.remaining, total: d.total }); if (d.remaining === 0) setQuotaExhausted(true); }
+      // 999 total = registered user (unlimited)
+      if (d.total >= 999) setLoggedIn(true);
     }).catch(() => {});
   }, [caseId]);
 
@@ -215,11 +218,21 @@ export default function CaseDetailPage() {
                 : quota.remaining === 0 ? "bg-[#FDE8E8] text-[#9B2C2C]" : "bg-[#F5F8FC] text-[#6B7F96]"
               }`}>
                 <span>今日剩余 {quota.remaining} 次对话{quota.remaining <= 5 && quota.remaining > 0 && " ⚠️"}</span>
-                {quota.remaining === 0 && <a href="/upgrade" className="font-medium text-[#1B4F8A] hover:underline">升级会员 →</a>}
+                {quota.remaining === 0 && (
+                    loggedIn ? <a href="/upgrade" className="font-medium text-[#1B4F8A] hover:underline">升级会员 →</a>
+                    : <a href="/auth?register=1" className="font-medium text-[#1B4F8A] hover:underline">免费注册 →</a>
+                  )}
               </div>
             )}
             {quotaExhausted && (
-              <div className="mb-4 text-center"><p className="text-sm text-[#9B2C2C] mb-2">今日次数已用完，明天再来</p><a href="/upgrade" className="text-sm text-[#1B4F8A] hover:underline">升级会员，无限对话 →</a></div>
+              <div className="mb-4 text-center">
+                <p className="text-sm text-[#9B2C2C] mb-2">今日免费次数已用完</p>
+                {loggedIn ? (
+                  <a href="/upgrade" className="text-sm text-[#1B4F8A] hover:underline">升级会员，无限对话 →</a>
+                ) : (
+                  <a href="/auth?register=1" className="text-sm text-[#1B4F8A] hover:underline">免费注册，无限对话 →</a>
+                )}
+              </div>
             )}
 
             {/* EGM viewer + Chat */}
