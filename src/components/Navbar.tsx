@@ -6,6 +6,7 @@ import { useEffect, useState, useRef } from "react";
 import { authService } from "@/lib/services";
 import { onDocumentEvent, navigateTo } from "@/lib/browser";
 import { ROUTES } from "@/lib/routes";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const mainLinks = [
   { href: ROUTES.CASES, label: "病例库" },
@@ -55,6 +56,7 @@ export default function Navbar() {
             ))}
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             {user ? (
               <div className="relative" ref={dropdownRef}>
                 <button onClick={() => setDropdownOpen(!dropdownOpen)} className="w-9 h-9 rounded-full bg-[#1B4F8A] flex items-center justify-center text-white text-sm font-bold hover:bg-[#154070] transition-all" title={user.email}>{avatarLetter}</button>

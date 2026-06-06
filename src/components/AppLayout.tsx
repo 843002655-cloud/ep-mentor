@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
+import BottomNav from "@/components/BottomNav";
 import { ROUTES } from "@/lib/routes";
 
 const footerLinks = {
@@ -25,7 +26,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen">{children}</main>
+      <main className="min-h-screen pb-16 md:pb-0">{children}</main>
+      <BottomNav />
 
       <footer className="border-t border-[#E8ECF0] bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
