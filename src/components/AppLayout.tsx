@@ -81,6 +81,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               >
                 粤ICP备XXXXXXXX号
               </a>
+              <Link href="/terms" className="hover:text-[#1B4F8A] transition-colors">
+                使用条款
+              </Link>
               <span className="bg-[#F5F8FC] border border-[#DDE5EE] rounded-full px-3 py-0.5 text-[#1B4F8A]">
                 微信小程序即将上线
               </span>

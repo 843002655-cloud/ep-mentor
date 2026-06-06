@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/api-utils";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // GET /api/cases — list cases (public: published only; admin: all)
 export async function GET(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
+  const { allowed } = checkRateLimit(ip);
+  if (!allowed) return NextResponse.json({ error: "请求过于频繁，请稍后再试" }, { status: 429 });
+
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category");
   const difficulty = searchParams.get("difficulty");
