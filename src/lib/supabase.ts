@@ -21,6 +21,7 @@ export interface Case {
   hint: string;
   key_points: string[];
   is_published: boolean;
+  mapping_system?: string;
   created_at: string;
 }
 

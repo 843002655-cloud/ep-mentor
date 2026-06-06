@@ -10,6 +10,7 @@ interface Case {
   id: string; title: string; category: string; difficulty: string;
   description: string; ecg_findings: string[]; question: string;
   hint: string; key_points: string[]; is_published: boolean;
+  mapping_system?: string;
 }
 
 const categories = [
@@ -80,20 +81,15 @@ function CaseList() {
   const [loggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => { setLoggedIn(authService.isLoggedIn()); }, []);
-  useEffect(() => { caseService.getCases().then((c) => { setAllCases(c); setLoading(false); }); }, []);
+  useEffect(() => {
+    caseService.getCases({ mapping_system: mapping || undefined }).then((c) => { setAllCases(c); setLoading(false); });
+  }, [mapping]);
 
   const filtered = allCases.filter((c) => {
     if (category && c.category !== category) return false;
     if (difficulty && c.difficulty !== difficulty) return false;
     if (!matchQrs(c.ecg_findings || [], qrsType)) return false;
     if (!keywordMatch(c, keyword)) return false;
-    // mapping system filter: placeholder (field not in DB yet)
-    if (mapping) {
-      const hasMapping = (c.ecg_findings || []).some((f) =>
-        f.toLowerCase().includes(mapping.toLowerCase())
-      );
-      if (!hasMapping && mapping !== "Other") return false;
-    }
     return true;
   });
 

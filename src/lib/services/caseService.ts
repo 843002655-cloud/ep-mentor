@@ -17,10 +17,11 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 export const caseService = {
-  async getCases(filters?: { category?: string; difficulty?: string }) {
+  async getCases(filters?: { category?: string; difficulty?: string; mapping_system?: string }) {
     const params = new URLSearchParams();
     if (filters?.category) params.set("category", filters.category);
     if (filters?.difficulty) params.set("difficulty", filters.difficulty);
+    if (filters?.mapping_system) params.set("mapping_system", filters.mapping_system);
     const data = await request<{ cases: Case[] }>(`${ROUTES.API_CASES}?${params.toString()}`);
     return data.cases;
   },

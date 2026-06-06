@@ -13,6 +13,7 @@ interface Case {
   id: string; title: string; category: string; difficulty: string;
   description: string; ecg_findings: string[]; question: string;
   hint: string; key_points: string[]; is_published: boolean;
+  mapping_system?: string;
 }
 interface Message { role: "user" | "assistant" | "system"; content: string; }
 

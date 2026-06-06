@@ -14,9 +14,12 @@ export async function GET(request: NextRequest) {
     .select("*")
     .order("created_at", { ascending: false });
 
+  const mapping = searchParams.get("mapping_system");
+
   if (!admin) query = query.eq("is_published", true);
   if (category) query = query.eq("category", category);
   if (difficulty) query = query.eq("difficulty", difficulty);
+  if (mapping) query = query.eq("mapping_system", mapping);
 
   const { data } = await query;
 
