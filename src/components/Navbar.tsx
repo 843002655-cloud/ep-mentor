@@ -9,10 +9,10 @@ import { ROUTES } from "@/lib/routes";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const mainLinks = [
-  { href: ROUTES.CASES, label: "病例库" },
-  { href: ROUTES.QUIZ, label: "知识测验" },
-  { href: "/tools", label: "EP 工具" },
-  { href: ROUTES.LIBRARY, label: "资料库" },
+  { href: ROUTES.CASES, label: "病例库", short: "病例" },
+  { href: ROUTES.QUIZ, label: "知识测验", short: "测验" },
+  { href: "/tools", label: "EP 工具", short: "工具" },
+  { href: ROUTES.LIBRARY, label: "资料库", short: "资料" },
 ];
 
 const dropdownItems = [
@@ -51,9 +51,9 @@ export default function Navbar() {
             <span className="text-2xl">⚡</span>
             <span className="text-lg font-bold text-[#1A2332] font-serif hidden sm:inline">EP <span className="text-[#1B4F8A]">Mentor</span></span>
           </Link>
-          <div className="hidden md:flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1">
             {mainLinks.map((link) => (
-              <Link key={link.href} href={link.href} className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${pathname.startsWith(link.href) ? "bg-[#EBF2FA] text-[#1B4F8A]" : "text-[#6B7F96] hover:text-[#3D5166] hover:bg-gray-50"}`}>{link.label}</Link>
+              <Link key={link.href} href={link.href} className={`px-1.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${pathname.startsWith(link.href) ? "bg-[#EBF2FA] text-[#1B4F8A]" : "text-[#6B7F96] hover:text-[#3D5166] hover:bg-gray-50"}`}><span className="hidden sm:inline">{link.label}</span><span className="sm:hidden">{link.short}</span></Link>
             ))}
           </div>
           <div className="flex items-center gap-3">
