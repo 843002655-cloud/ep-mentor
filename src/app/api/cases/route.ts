@@ -21,11 +21,11 @@ export async function GET(request: NextRequest) {
   const { data } = await query;
 
   // 去重：同 title 只保留最早创建的
-  const seen = new Map<string, (typeof data)[0]>();
+  const seen = new Map<string, unknown>();
   if (data) {
-    for (const row of data) {
-      const key = row.title;
-      if (!seen.has(key) || new Date(row.created_at) < new Date(seen.get(key)!.created_at)) {
+    for (const row of data as Record<string, unknown>[]) {
+      const key = row.title as string;
+      if (!seen.has(key) || new Date(row.created_at as string) < new Date((seen.get(key) as Record<string, unknown>)?.created_at as string)) {
         seen.set(key, row);
       }
     }
