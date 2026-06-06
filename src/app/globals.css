@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Dark Mode Foundation（未来启用） ─────────────────────────────── */
+/* 启用方式：在 <html> 加 class="dark"，配合 Tailwind dark: 前缀 */
+/*
+.dark body { background: #0f172a; color: #e2e8f0; }
+.dark .card { background: #1e293b; border-color: #334155; }
+.dark .btn-primary { background: #3b82f6; }
+*/
+
 /* ── 移动端基础适配 ────────────────────────────────────────────── */
 
 html {
