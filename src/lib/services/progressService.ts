@@ -20,6 +20,14 @@ export interface ProgressItem {
 }
 
 export const progressService = {
+  /** 获取今日配额 */
+  async getQuota() {
+    const data = await request<{
+      used: number; remaining: number; total: number;
+    }>("/api/quota");
+    return data;
+  },
+
   /** 获取用户学习进度 */
   async getUserProgress() {
     const data = await request<{

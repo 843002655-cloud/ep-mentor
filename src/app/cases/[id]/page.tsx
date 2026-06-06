@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
-import { caseService, chatService } from "@/lib/services";
+import { caseService, chatService, progressService } from "@/lib/services";
 import type { CaseInput } from "@/lib/services";
 
 interface Case {
@@ -39,7 +39,7 @@ export default function CaseDetailPage() {
       setLoading(false);
     });
     // Fetch initial quota from DB
-    fetch("/api/quota").then((r) => r.json()).then((d) => {
+    progressService.getQuota().then((d) => {
       if (d.total) setQuota({ remaining: d.remaining, total: d.total });
       if (d.remaining === 0) setQuotaExhausted(true);
     }).catch(() => {});

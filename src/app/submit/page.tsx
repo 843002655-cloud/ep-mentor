@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
 import { ROUTES } from "@/lib/routes";
+import { submissionService } from "@/lib/services";
 
 export default function SubmitPage() {
   const router = useRouter();
@@ -15,9 +16,7 @@ export default function SubmitPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true); setMessage("");
     try {
-      const res = await fetch("/api/submissions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "提交失败");
+      await submissionService.createSubmission(form);
       setSuccess(true);
     } catch (err: unknown) { setMessage((err as Error).message); }
     finally { setLoading(false); }

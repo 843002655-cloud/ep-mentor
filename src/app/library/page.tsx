@@ -24,9 +24,11 @@ export default function LibraryPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/resources${category ? `?category=${category}` : ""}`)
-      .then((r) => r.json()).then((data) => { setResources(data.resources || []); setLoading(false); })
-      .catch(() => setLoading(false));
+    import("@/lib/services").then(({ resourceService }) => {
+      resourceService.getResources(category || undefined).then((res) => {
+        setResources(res || []); setLoading(false);
+      }).catch(() => setLoading(false));
+    });
   }, [category]);
 
   return (

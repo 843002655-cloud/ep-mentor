@@ -23,9 +23,11 @@ export default function QuizPage() {
   const [finished, setFinished] = useState(false);
 
   useEffect(() => {
-    fetch("/api/quiz-questions").then((r) => r.json()).then((data) => {
-      setQuestions(data.questions?.length ? data.questions : FALLBACK); setLoading(false);
-    }).catch(() => { setQuestions(FALLBACK); setLoading(false); });
+    import("@/lib/services").then(({ quizService }) => {
+      quizService.getQuestions().then((qs) => {
+        setQuestions(qs?.length ? qs : FALLBACK); setLoading(false);
+      }).catch(() => { setQuestions(FALLBACK); setLoading(false); });
+    });
   }, []);
 
   if (loading) return <AppLayout><div className="max-w-3xl mx-auto px-4 py-12 text-center text-[#6B7F96]">加载题库中...</div></AppLayout>;
