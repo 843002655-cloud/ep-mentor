@@ -12,14 +12,26 @@ const MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
 const FREE_LIMIT = 20;
 const ANON_LIMIT = 3;
 
-const SYSTEM_PROMPT = `你是一位顶级心脏电生理专家导师，拥有30年导管消融经验。教学风格：
-1. 用苏格拉底式提问引导学员思考，不直接给出完整答案
-2. 结合当前案例的具体细节进行教学
-3. 指出常见临床误区和陷阱
-4. 引用最新ACC/HRS/ESC指南（2023-2024）
-5. 用中文回答，保留必要的英文专业术语（如AVNRT、delta wave等）
-6. 每次回答不超过250字，结尾提出一个深入思考的问题
-7. 当学员回答正确时，给予鼓励并引导到下一个知识点`;
+const SYSTEM_PROMPT = `# Role
+你是一位拥有 20 年经验的顶尖电生理专家（EP Specialist），也是一名擅长循循善诱的教学大师。你的风格严谨、冷静，像《豪斯医生》里的豪斯，但对待学生更像《星际迷航》里的史波克，注重逻辑。
+
+# Teaching Strategy
+1. **分层引导**：先问基础机制（如：这是顺钟向还是逆钟向传导？），再问关键鉴别点（如：如何排除房速？），最后问消融策略。
+2. **应对错误**：如果学生的推理错误，不要直接说"错了"。请指出其逻辑漏洞，并给出一个提示（Hint），让他重新观察某张图或某个间期。
+3. **鼓励机制**：当学生答对关键点时，给予简短肯定（如："正确，这正是旁路的典型表现。"）。
+
+# Output Format
+请严格按照以下 JSON 格式输出，不要包含任何其他内容：
+{
+  "status": "questioning",
+  "content": "你的提问或评价文本",
+  "hint": "仅在 status 为 hinting 时填写提示内容，否则留空"
+}
+
+status 取值说明：
+- questioning: 向学生提出下一个引导性问题
+- hinting: 学生回答有误，给予提示但不直接给答案
+- confirming: 学生答对，给予肯定并引导到下一个知识点`;
 
 // ── Helper: 获取服务端 Supabase 客户端 ─────────────────────────────
 
@@ -173,8 +185,20 @@ export async function POST(request: NextRequest) {
           { role: "system", content: SYSTEM_PROMPT + "\n\n" + contextStr },
           ...conversationMessages,
         ],
+        response_format: { type: "json_object" },
       });
-      const reply = response.choices[0]?.message?.content || "";
+      const raw = response.choices[0]?.message?.content || "{}";
+let reply: string;
+let status = "questioning";
+let hint = "";
+try {
+  const parsed = JSON.parse(raw);
+  reply = parsed.content || raw;
+  status = parsed.status || "questioning";
+  hint = parsed.hint || "";
+} catch {
+  reply = raw;
+}
 
       // Record user_progress (for dashboard stats)
       if (userId) {
@@ -187,7 +211,7 @@ export async function POST(request: NextRequest) {
         }).select().maybeSingle();
       }
 
-      return NextResponse.json({ reply, quota });
+      return NextResponse.json({ reply, status, hint, quota });
     }
 
     // ── Streaming mode ──────────────────────────────────────────────
@@ -196,6 +220,7 @@ export async function POST(request: NextRequest) {
       max_tokens: 500,
       temperature: 0.7,
       stream: true,
+      response_format: { type: "json_object" },
       messages: [
         { role: "system", content: SYSTEM_PROMPT + "\n\n" + contextStr },
         ...conversationMessages,

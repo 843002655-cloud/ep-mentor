@@ -51,15 +51,24 @@ export default function CaseDetailPage() {
     setMessages((p) => [...p, userMessage]); setInput(""); setSending(true);
     try {
       // 移植小程序时：将 sendMessageStream 改为 sendMessage（非流式）
-      const reply = await chatService.sendMessageStream(
+      const rawReply = await chatService.sendMessageStream(
         [...messages, userMessage].slice(-10),
         caseData as CaseInput,
         caseId,
-        () => {
-          // Web 端流式接收，各 chunk 由 API 逐片推送
-        }
+        () => {}
       );
-      setMessages((p) => [...p, { role: "assistant", content: reply }]);
+      // 解析 AI 的 JSON 结构化回复
+      let displayContent = rawReply;
+      let aiHint = "";
+      try {
+        const parsed = JSON.parse(rawReply);
+        displayContent = parsed.content || rawReply;
+        aiHint = parsed.hint || "";
+      } catch { /* 非 JSON 时直接显示原文 */ }
+      const messageContent = aiHint
+        ? displayContent + "\n\n💡 提示：" + aiHint
+        : displayContent;
+      setMessages((p) => [...p, { role: "assistant", content: messageContent }]);
       if (quota !== null) setQuota((q) => q ? { ...q, remaining: q.remaining - 1 } : null);
     } catch (err: unknown) {
       const msg = (err as Error).message || "";
