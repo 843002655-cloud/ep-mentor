@@ -4,6 +4,7 @@ import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
 import { authService } from "@/lib/services";
+import { navigateTo, replaceTo } from "@/lib/browser";
 
 function AuthForm() {
   const [email, setEmail] = useState("843002655@qq.com");
@@ -19,12 +20,12 @@ function AuthForm() {
     try {
       if (isRegister) {
         const data = await authService.register(email, password);
-        if (data.session) { window.location.href = redirect; return; }
+        if (data.session) { navigateTo(redirect); return; }
         if (data.user?.identities?.length === 0) { setMessage("该邮箱已注册，请直接登录"); }
-        else { window.location.href = redirect; }
+        else { navigateTo(redirect); }
       } else {
         const data = await authService.login(email, password);
-        if (data.session) { window.location.replace(redirect); return; }
+        if (data.session) { replaceTo(redirect); return; }
         setMessage("登录失败：未获取到会话");
       }
     } catch (err: unknown) { setMessage("异常：" + ((err as Error).message || "未知错误")); }

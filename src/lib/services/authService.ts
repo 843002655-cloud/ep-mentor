@@ -3,6 +3,7 @@
 
 import { getSupabase } from "@/lib/supabase";
 import storage from "@/lib/storage";
+import { isBrowser } from "@/lib/browser";
 
 export const authService = {
   /** 邮箱登录 */
@@ -38,7 +39,7 @@ export const authService = {
 
   /** 获取 Supabase auth token（从本地存储） */
   _getToken(): Record<string, unknown> | null {
-    if (typeof window === "undefined") return null;
+    if (!isBrowser()) return null;
     return storage.getJSON<Record<string, unknown>>(
       "sb-kqoigeigwucvlpzbvboy-auth-token"
     );

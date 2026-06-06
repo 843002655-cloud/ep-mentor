@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { authService } from "@/lib/services";
+import { onDocumentEvent, navigateTo } from "@/lib/browser";
 
 const mainLinks = [
   { href: "/cases", label: "病例库" },
@@ -31,12 +32,11 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => { if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setDropdownOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    const handler = (e: Event) => { if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setDropdownOpen(false); };
+    return onDocumentEvent("mousedown", handler);
   }, []);
 
-  const handleLogout = async () => { await authService.logout(); window.location.href = "/"; };
+  const handleLogout = async () => { await authService.logout(); navigateTo("/"); };
   const avatarLetter = user?.email?.[0]?.toUpperCase() || "?";
 
   return (
