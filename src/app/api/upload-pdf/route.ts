@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
+
+// Use bundled worker — pure JS, zero native deps
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 const deepseek = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY!,
@@ -21,17 +25,17 @@ const EXTRACT_PROMPT = `# Role
 4. 生成的案例必须包含完整的诊断逻辑链
 
 # Output Format
-严格按照以下 JSON 格式输出，不要包含任何其他内容：
+严格按照以下 JSON 格式输出：
 {
-  "title": "案例标题（10字以内，反映核心教学点）",
+  "title": "案例标题（10字以内）",
   "category": "SVT / VT / AF / AFL 之一",
   "difficulty": "基础 / 进阶 / 高级",
-  "description": "病史摘要（50-100字，包含年龄/性别/主诉/关键体征）",
-  "ecg_findings": ["心电图发现1", "心电图发现2", "心电图发现3", "心电图发现4"],
-  "question": "苏格拉底式核心提问（引导学员思考诊断逻辑和处理策略）",
-  "hint": "教学提示（指出思考方向，不直接给答案）",
+  "description": "病史摘要（50-100字）",
+  "ecg_findings": ["发现1", "发现2", "发现3", "发现4"],
+  "question": "苏格拉底式核心提问",
+  "hint": "教学提示",
   "key_points": ["知识点1", "知识点2", "知识点3", "知识点4"],
-  "mapping_system": "Carto / EnSite / Rhythmia 或其他，如不确定留空"
+  "mapping_system": "Carto / EnSite / Rhythmia 或其他"
 }`;
 
 export async function POST(request: NextRequest) {
@@ -39,43 +43,38 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
 
-    if (!file) {
-      return NextResponse.json({ error: "请上传 PDF 文件" }, { status: 400 });
-    }
+    if (!file) return NextResponse.json({ error: "请上传 PDF 文件" }, { status: 400 });
+    if (!file.name.toLowerCase().endsWith(".pdf")) return NextResponse.json({ error: "仅支持 PDF 格式" }, { status: 400 });
 
-    if (!file.name.toLowerCase().endsWith(".pdf")) {
-      return NextResponse.json({ error: "仅支持 PDF 格式" }, { status: 400 });
-    }
-
-    // Extract text from PDF
+    // Read file as ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const uint8 = new Uint8Array(arrayBuffer);
 
-    let pdfText: string;
+    // Extract text using pdfjs-dist
+    let pdfText = "";
     try {
-      const { PDFParse } = await import("pdf-parse") as unknown as { PDFParse: (buf: Buffer) => Promise<{ text: string }> };
-      const pdfData = await PDFParse(buffer);
-      pdfText = pdfData.text;
+      const loadingTask = pdfjsLib.getDocument({ data: uint8 });
+      const pdf = await loadingTask.promise;
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items.map((item) => ("str" in item ? item.str : "")).join(" ");
+        pdfText += pageText + "\n";
+      }
     } catch {
-      return NextResponse.json(
-        { error: "PDF 解析失败，请确认文件未加密且包含可提取的文字" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "PDF 解析失败，请确认文件未加密且包含可提取的文字" }, { status: 400 });
     }
 
     if (!pdfText || pdfText.trim().length < 50) {
-      return NextResponse.json(
-        { error: "PDF 文字内容过少，可能为扫描件（暂不支持 OCR）" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "PDF 文字内容过少，可能为扫描件" }, { status: 400 });
     }
 
-    // Truncate if too long (DeepSeek context limit)
-    const maxChars = 8000;
-    const truncated =
-      pdfText.length > maxChars
-        ? pdfText.slice(0, maxChars) + "\n\n[内容已截断，剩余 " + (pdfText.length - maxChars) + " 字符]"
-        : pdfText;
+    // Truncate for DeepSeek context
+    const maxChars = 6000;
+    const truncated = pdfText.length > maxChars
+      ? pdfText.slice(0, maxChars) + "\n\n[截断 " + (pdfText.length - maxChars) + " 字符]"
+      : pdfText;
 
     // Send to AI
     const response = await deepseek.chat.completions.create({
@@ -85,21 +84,22 @@ export async function POST(request: NextRequest) {
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: EXTRACT_PROMPT },
-        { role: "user", content: `以下是一篇电生理相关文献/病例报告的内容。请从中提取教学案例：\n\n${truncated}` },
+        { role: "user", content: `以下是一篇电生理文献内容。请从中提取教学案例：\n\n${truncated}` },
       ],
     });
 
     const raw = response.choices[0]?.message?.content || "{}";
     const cleaned = raw.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-    const caseData = JSON.parse(cleaned);
+    let caseData;
+    try {
+      caseData = JSON.parse(cleaned);
+    } catch {
+      caseData = JSON.parse(raw);
+    }
 
     return NextResponse.json({ case: caseData });
   } catch (error: unknown) {
-    const err = error as { message?: string };
-    console.error("PDF upload error:", err);
-    return NextResponse.json(
-      { error: err.message || "处理失败" },
-      { status: 500 }
-    );
+    console.error("PDF error:", error);
+    return NextResponse.json({ error: "处理失败，请重试" }, { status: 500 });
   }
 }
