@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { ROUTES } from "@/lib/routes";
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -32,22 +33,22 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Protected routes: require login
-  const protectedPaths = ["/dashboard", "/submit"];
+  const protectedPaths = [ROUTES.DASHBOARD, ROUTES.SUBMIT];
   const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
 
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/auth";
+    url.pathname = ROUTES.AUTH;
     url.searchParams.set("redirect", pathname);
     return NextResponse.redirect(url);
   }
 
   // Admin routes: require admin email
-  const isAdminPath = pathname.startsWith("/admin");
+  const isAdminPath = pathname.startsWith(ROUTES.ADMIN_PREFIX);
   if (isAdminPath) {
     if (!user) {
       const url = request.nextUrl.clone();
-      url.pathname = "/auth";
+      url.pathname = ROUTES.AUTH;
       url.searchParams.set("redirect", pathname);
       return NextResponse.redirect(url);
     }

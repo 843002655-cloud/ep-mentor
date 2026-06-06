@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import AppLayout from "@/components/AppLayout";
 import { progressService, authService } from "@/lib/services";
+import { ROUTES } from "@/lib/routes";
 import type { ProgressItem } from "@/lib/services";
 
 export default function DashboardPage() {
@@ -32,7 +33,7 @@ export default function DashboardPage() {
           ))}
         </div>
         <h2 className="text-xl font-semibold text-[#1A2332] mb-4 font-serif">最近学习</h2>
-        {progress.length===0 ? <div className="card text-center text-[#6B7F96]">还没有学习记录，去<a href="/cases" className="text-[#1B4F8A] mx-1">病例库</a>开始学习吧！</div>
+        {progress.length===0 ? <div className="card text-center text-[#6B7F96]">还没有学习记录，去<a href={ROUTES.CASES} className="text-[#1B4F8A] mx-1">病例库</a>开始学习吧！</div>
         : <div className="space-y-3">{progress.slice(0,20).map((p,i)=>(
             <div key={i} className="card flex items-center justify-between py-4">
               <div className="flex items-center gap-3">{p.cases?.category && <span className={`badge-category ${catColors[p.cases.category]||""}`}>{p.cases.category}</span>}<span className="text-[#1A2332]">{p.cases?.title||"未知"}</span></div>

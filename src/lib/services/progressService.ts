@@ -1,6 +1,8 @@
 // ── Progress Service ────────────────────────────────────────────────────
 // 用户学习进度和配额管理。
 
+import { ROUTES } from "@/lib/routes";
+
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     headers: { "Content-Type": "application/json" },
@@ -23,7 +25,7 @@ export const progressService = {
     const data = await request<{
       progress: ProgressItem[];
       totalCases: number;
-    }>("/api/progress");
+    }>(ROUTES.API_PROGRESS);
     return data;
   },
 

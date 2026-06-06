@@ -5,17 +5,18 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { authService } from "@/lib/services";
 import { onDocumentEvent, navigateTo } from "@/lib/browser";
+import { ROUTES } from "@/lib/routes";
 
 const mainLinks = [
-  { href: "/cases", label: "病例库" },
-  { href: "/quiz", label: "知识测验" },
-  { href: "/library", label: "资料库" },
+  { href: ROUTES.CASES, label: "病例库" },
+  { href: ROUTES.QUIZ, label: "知识测验" },
+  { href: ROUTES.LIBRARY, label: "资料库" },
 ];
 
 const dropdownItems = [
-  { href: "/dashboard", label: "学习进度", icon: "📊" },
-  { href: "/submit", label: "投稿案例", icon: "📝" },
-  { href: "/admin/cases", label: "管理后台", icon: "⚙️", admin: true },
+  { href: ROUTES.DASHBOARD, label: "学习进度", icon: "📊" },
+  { href: ROUTES.SUBMIT, label: "投稿案例", icon: "📝" },
+  { href: ROUTES.ADMIN, label: "管理后台", icon: "⚙️", admin: true },
 ];
 
 export default function Navbar() {
@@ -36,7 +37,7 @@ export default function Navbar() {
     return onDocumentEvent("mousedown", handler);
   }, []);
 
-  const handleLogout = async () => { await authService.logout(); navigateTo("/"); };
+  const handleLogout = async () => { await authService.logout(); navigateTo(ROUTES.HOME); };
   const avatarLetter = user?.email?.[0]?.toUpperCase() || "?";
 
   return (
@@ -70,8 +71,8 @@ export default function Navbar() {
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <Link href="/auth" className="text-xs sm:text-sm py-1.5 px-2.5 sm:px-4 border border-[#C5D3E0] text-[#4B6080] rounded-lg hover:border-[#1B4F8A] hover:text-[#1B4F8A] transition-colors whitespace-nowrap">登录</Link>
-                <Link href="/auth?register=1" className="text-xs sm:text-sm py-1.5 px-2.5 sm:px-4 rounded-lg text-white font-medium bg-[#1B4F8A] hover:bg-[#154070] transition-all whitespace-nowrap">免费注册</Link>
+                <Link href={ROUTES.AUTH} className="text-xs sm:text-sm py-1.5 px-2.5 sm:px-4 border border-[#C5D3E0] text-[#4B6080] rounded-lg hover:border-[#1B4F8A] hover:text-[#1B4F8A] transition-colors whitespace-nowrap">登录</Link>
+                <Link href={ROUTES.AUTH_REGISTER} className="text-xs sm:text-sm py-1.5 px-2.5 sm:px-4 rounded-lg text-white font-medium bg-[#1B4F8A] hover:bg-[#154070] transition-all whitespace-nowrap">免费注册</Link>
               </div>
             )}
           </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
+import { ROUTES } from "@/lib/routes";
 
 export default function SubmitPage() {
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function SubmitPage() {
         <div className="card"><div className="text-5xl mb-4">✅</div>
           <h2 className="text-2xl font-bold text-[#1A2332] mb-2 font-serif">提交成功</h2>
           <p className="text-[#6B7F96] mb-6">投稿已提交，等待管理员审核。</p>
-          <button onClick={() => router.push("/cases")} className="btn-primary">返回病例库</button>
+          <button onClick={() => router.push(ROUTES.CASES)} className="btn-primary">返回病例库</button>
         </div>
       </div>
     </AppLayout>

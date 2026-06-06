@@ -1,6 +1,8 @@
 // ── Chat Service ────────────────────────────────────────────────────────
 // AI 导师对话和案例生成。
 
+import { ROUTES } from "@/lib/routes";
+
 export interface Message {
   role: "user" | "assistant" | "system";
   content: string;
@@ -35,7 +37,7 @@ export const chatService = {
     caseContext: CaseContext,
     caseId: string
   ): Promise<string> {
-    const data = await request<{ reply: string }>("/api/chat", {
+    const data = await request<{ reply: string }>(ROUTES.API_CHAT, {
       caseContext,
       messages,
       caseId,
@@ -51,7 +53,7 @@ export const chatService = {
     caseId: string,
     onChunk: (text: string) => void
   ): Promise<string> {
-    const res = await fetch("/api/chat", {
+    const res = await fetch(ROUTES.API_CHAT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ caseContext, messages, caseId, stream: true }),
@@ -80,7 +82,7 @@ export const chatService = {
     difficulty: string,
     count: number = 1
   ) {
-    const data = await request<{ cases: object[] }>("/api/generate-case", {
+    const data = await request<{ cases: object[] }>(ROUTES.API_GENERATE_CASE, {
       category,
       difficulty,
       count,

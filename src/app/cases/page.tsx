@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
 import { caseService, authService } from "@/lib/services";
+import { ROUTES } from "@/lib/routes";
 
 interface Case {
   id: string; title: string; category: string; difficulty: string;
@@ -81,7 +82,7 @@ function CaseList() {
         {!loggedIn && (
           <div className="mb-8 px-4 py-3 rounded-xl border border-[#1B4F8A]/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" style={{ background: "#EBF2FA" }}>
             <span className="text-sm text-[#1A2332]">🎓 免费注册即可与 AI 导师对话，开始学习</span>
-            <a href="/auth?register=1" className="text-sm font-medium text-[#1B4F8A] hover:text-[#154070] transition-colors whitespace-nowrap self-end sm:self-auto">立即注册 →</a>
+            <a href={ROUTES.AUTH_REGISTER} className="text-sm font-medium text-[#1B4F8A] hover:text-[#154070] transition-colors whitespace-nowrap self-end sm:self-auto">立即注册 →</a>
           </div>
         )}
         <div className="flex flex-wrap gap-3 mb-8 items-center">
@@ -98,8 +99,8 @@ function CaseList() {
             {filtered.map((c) => (
               <div key={c.id} role="link" tabIndex={0}
                 onClick={() => {
-                  if (!loggedIn) { alert("请先登录或注册，即可免费开始学习"); router.push("/auth?register=1&redirect="+encodeURIComponent("/cases/"+c.id)); }
-                  else router.push("/cases/"+c.id);
+                  if (!loggedIn) { alert("请先登录或注册，即可免费开始学习"); router.push(ROUTES.AUTH_REDIRECT(ROUTES.CASE_DETAIL(c.id))); }
+                  else router.push(ROUTES.CASE_DETAIL(c.id));
                 }}
                 onKeyDown={(e)=>{if(e.key==="Enter")e.currentTarget.click();}}
                 className="card group flex flex-col cursor-pointer"

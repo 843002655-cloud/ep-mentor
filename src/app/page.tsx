@@ -1,11 +1,12 @@
 import Link from "next/link";
 import AppLayout from "@/components/AppLayout";
+import { ROUTES } from "@/lib/routes";
 
 const features = [
-  { icon: "📚", title: "病例库", desc: "分类浏览 SVT、VT、AF、心房扑动等经典电生理案例", href: "/cases" },
-  { icon: "🤖", title: "AI 导师", desc: "苏格拉底式教学，引导你独立思考而非直接给答案", href: "/cases" },
-  { icon: "📝", title: "知识测验", desc: "选择题形式巩固知识点，检验学习成果", href: "/quiz" },
-  { icon: "📤", title: "病例投稿", desc: "提交你的真实脱敏病例，与同行分享临床经验", href: "/submit" },
+  { icon: "📚", title: "病例库", desc: "分类浏览 SVT、VT、AF、心房扑动等经典电生理案例", href: ROUTES.CASES },
+  { icon: "🤖", title: "AI 导师", desc: "苏格拉底式教学，引导你独立思考而非直接给答案", href: ROUTES.CASES },
+  { icon: "📝", title: "知识测验", desc: "选择题形式巩固知识点，检验学习成果", href: ROUTES.QUIZ },
+  { icon: "📤", title: "病例投稿", desc: "提交你的真实脱敏病例，与同行分享临床经验", href: ROUTES.SUBMIT },
 ];
 
 const categories = [
@@ -31,10 +32,10 @@ export default function Home() {
               通过苏格拉底式对话教学，引导你深入理解每一份心电图的背后逻辑。
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/cases" className="bg-[#1B4F8A] hover:bg-[#154070] text-white font-medium py-3 px-8 rounded-lg transition-colors text-lg">
+              <Link href={ROUTES.CASES} className="bg-[#1B4F8A] hover:bg-[#154070] text-white font-medium py-3 px-8 rounded-lg transition-colors text-lg">
                 开始学习
               </Link>
-              <Link href="/auth" className="border border-[#C5D3E0] text-[#4B6080] hover:border-[#1B4F8A] hover:text-[#1B4F8A] font-medium py-3 px-8 rounded-lg transition-colors text-lg">
+              <Link href={ROUTES.AUTH} className="border border-[#C5D3E0] text-[#4B6080] hover:border-[#1B4F8A] hover:text-[#1B4F8A] font-medium py-3 px-8 rounded-lg transition-colors text-lg">
                 注册 / 登录
               </Link>
             </div>
@@ -61,7 +62,7 @@ export default function Home() {
         <h2 className="text-3xl font-bold text-center text-[#1A2332] mb-12 font-serif">病例分类</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {categories.map((cat) => (
-            <Link key={cat.name} href={`/cases?category=${cat.name}`} className={`border rounded-xl p-6 text-center transition-all hover:scale-105 ${cat.color}`}>
+            <Link key={cat.name} href={ROUTES.CASES_CATEGORY(cat.name)} className={`border rounded-xl p-6 text-center transition-all hover:scale-105 ${cat.color}`}>
               <div className="text-2xl font-bold mb-1">{cat.name}</div>
               <div className="text-xs opacity-80">{cat.desc}</div>
             </Link>
