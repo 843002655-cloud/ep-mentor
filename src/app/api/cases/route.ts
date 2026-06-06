@@ -19,7 +19,19 @@ export async function GET(request: NextRequest) {
   if (difficulty) query = query.eq("difficulty", difficulty);
 
   const { data } = await query;
-  return NextResponse.json({ cases: data || [] });
+
+  // 去重：同 title 只保留最早创建的
+  const seen = new Map<string, (typeof data)[0]>();
+  if (data) {
+    for (const row of data) {
+      const key = row.title;
+      if (!seen.has(key) || new Date(row.created_at) < new Date(seen.get(key)!.created_at)) {
+        seen.set(key, row);
+      }
+    }
+  }
+
+  return NextResponse.json({ cases: Array.from(seen.values()) });
 }
 
 // POST /api/cases — admin create case
