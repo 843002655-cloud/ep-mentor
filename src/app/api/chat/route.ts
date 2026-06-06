@@ -9,8 +9,7 @@ const deepseek = new OpenAI({
 
 const MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
 
-const FREE_LIMIT = 20;
-const ANON_LIMIT = 3;
+const ANON_LIMIT = 20;  // 未注册用户，每天 20 次
 
 const SYSTEM_PROMPT = `# Role
 你是一位拥有 20 年经验的顶尖电生理专家（EP Specialist），也是一名擅长循循善诱的教学大师。你的风格严谨、冷静，像《豪斯医生》里的豪斯，但对待学生更像《星际迷航》里的史波克，注重逻辑。
@@ -78,9 +77,12 @@ async function checkAndIncrementQuota(
   ip: string,
   cookieHeader: string
 ): Promise<{ allowed: boolean; remaining: number; total: number }> {
+  // 注册用户不限次数
+  if (userId) return { allowed: true, remaining: 999, total: 999 };
+
   const supabaseAdmin = getSupabaseAdmin(cookieHeader);
   const today = new Date().toISOString().split("T")[0];
-  const limit = userId ? FREE_LIMIT : ANON_LIMIT;
+  const limit = ANON_LIMIT;
 
   // 查询今日记录
   const { data: existing } = await supabaseAdmin

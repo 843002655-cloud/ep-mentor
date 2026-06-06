@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-const FREE_LIMIT = 20;
-const ANON_LIMIT = 3;
+const ANON_LIMIT = 20;  // 未注册用户，每天 20 次
 
 export async function GET(request: NextRequest) {
   const cookieHeader = request.headers.get("cookie") || "";
@@ -31,7 +30,9 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser();
   const userId = user?.id || null;
   const today = new Date().toISOString().split("T")[0];
-  const limit = userId ? FREE_LIMIT : ANON_LIMIT;
+  // 注册用户不限次数
+  if (userId) return NextResponse.json({ used: 0, remaining: 999, total: 999 });
+  const limit = ANON_LIMIT;
 
   const { data } = await supabase
     .from("usage_logs")
