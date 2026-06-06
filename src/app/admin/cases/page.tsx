@@ -5,9 +5,9 @@ import AppLayout from "@/components/AppLayout";
 import { caseService } from "@/lib/services";
 import type { CaseInput } from "@/lib/services";
 
-interface Case { id: string; title: string; category: string; difficulty: string; description: string; ecg_findings: string[]; question: string; hint: string; key_points: string[]; is_published: boolean; mapping_system?: string; }
+interface Case { id: string; title: string; category: string; difficulty: string; description: string; ecg_findings: string[]; question: string; hint: string; key_points: string[]; is_published: boolean; mapping_system?: string; video_url?: string; }
 
-const empty: CaseInput = { title: "", category: "SVT", difficulty: "基础", description: "", ecg_findings: [""], question: "", hint: "", key_points: [""], is_published: false, mapping_system: "" };
+const empty: CaseInput = { title: "", category: "SVT", difficulty: "基础", description: "", ecg_findings: [""], question: "", hint: "", key_points: [""], is_published: false, mapping_system: "", video_url: "" };
 const catColors: Record<string, string> = { SVT: "bg-[#EBF2FA] text-[#1B4F8A]", VT: "bg-[#FDE8E8] text-[#9B2C2C]", AF: "bg-[#FEF3E2] text-[#854F0B]", AFL: "bg-[#EDE9FB] text-[#4C3D9E]" };
 const inputClass = "w-full px-3 py-2 bg-white border border-[#C5D3E0] rounded text-[#1A2332] text-sm focus:outline-none focus:border-[#1B4F8A]";
 
@@ -22,7 +22,7 @@ export default function AdminCasesPage() {
   const fetchCases = async () => { setCases(await caseService.getCases()); setLoading(false); };
   useEffect(() => { fetchCases(); }, []);
 
-  const handleEdit = (c: Case) => { setEditingId(c.id); setForm({ title: c.title, category: c.category as CaseInput["category"], difficulty: c.difficulty as CaseInput["difficulty"], description: c.description, ecg_findings: c.ecg_findings || [""], question: c.question, hint: c.hint, key_points: c.key_points || [""], is_published: c.is_published, mapping_system: c.mapping_system || "" }); setIsNew(false); };
+  const handleEdit = (c: Case) => { setEditingId(c.id); setForm({ title: c.title, category: c.category as CaseInput["category"], difficulty: c.difficulty as CaseInput["difficulty"], description: c.description, ecg_findings: c.ecg_findings || [""], question: c.question, hint: c.hint, key_points: c.key_points || [""], is_published: c.is_published, mapping_system: c.mapping_system || "", video_url: c.video_url || "" }); setIsNew(false); };
   const handleNew = () => { setEditingId(null); setForm(empty); setIsNew(true); };
   const handleSave = async () => {
     setSaving(true);
@@ -45,6 +45,7 @@ export default function AdminCasesPage() {
               <div><label className="block text-sm font-medium text-[#3D5166] mb-1">分类</label><select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as CaseInput["category"] })} className={inputClass}>{["SVT","VT","AF","AFL"].map(o=><option key={o} value={o}>{o}</option>)}</select></div>
               <div><label className="block text-sm font-medium text-[#3D5166] mb-1">难度</label><select value={form.difficulty} onChange={(e) => setForm({ ...form, difficulty: e.target.value as CaseInput["difficulty"] })} className={inputClass}>{["基础","进阶","高级"].map(o=><option key={o} value={o}>{o}</option>)}</select></div>
               <div><label className="block text-sm font-medium text-[#3D5166] mb-1">标测系统</label><select value={form.mapping_system || ""} onChange={(e) => setForm({ ...form, mapping_system: e.target.value })} className={inputClass}><option value="">未指定</option>{["Carto","EnSite","Rhythmia","Other"].map(o=><option key={o} value={o}>{o}</option>)}</select></div>
+              <div><label className="block text-sm font-medium text-[#3D5166] mb-1">视频链接（可选）</label><input value={form.video_url || ""} onChange={(e) => setForm({ ...form, video_url: e.target.value })} placeholder="https://..." className={inputClass} /></div>
               <div><label className="block text-sm font-medium text-[#3D5166] mb-1">核心提问</label><input value={form.question} onChange={(e) => setForm({ ...form, question: e.target.value })} className={inputClass} /></div>
             </div>
             <div className="mb-4"><label className="block text-sm font-medium text-[#3D5166] mb-1">病史摘要</label><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} className={`${inputClass} resize-none`} /></div>
