@@ -87,8 +87,15 @@ function CaseList() {
     <AppLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h1 className="text-3xl font-bold text-white mb-2">病例库</h1>
-        <p className="text-ep-muted mb-4">
-          浏览经典心脏电生理教学案例，与 AI 导师互动学习
+        <p className="text-ep-muted mb-3">
+          从 SVT 鉴别到室速标测，AI 导师引导你像专家一样思考每一个决策点
+        </p>
+        <p className="text-xs text-ep-muted mb-4 flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span>⚡ 50+ 精选案例</span>
+          <span className="text-slate-600">|</span>
+          <span>🎯 覆盖 SVT / VT / AF / WPW</span>
+          <span className="text-slate-600">|</span>
+          <span>👨‍⚕️ AI 苏格拉底式教学</span>
         </p>
 
         {!loggedIn && (
