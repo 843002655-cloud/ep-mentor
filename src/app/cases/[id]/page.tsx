@@ -45,10 +45,14 @@ export default function CaseDetailPage() {
     const userMessage: Message = { role: "user", content: input };
     setMessages((p) => [...p, userMessage]); setInput(""); setSending(true);
     try {
-      const reply = await chatService.sendMessage(
+      // 移植小程序时：将 sendMessageStream 改为 sendMessage（非流式）
+      const reply = await chatService.sendMessageStream(
         [...messages, userMessage].slice(-10),
         caseData as CaseInput,
-        caseId
+        caseId,
+        () => {
+          // Web 端流式接收，各 chunk 由 API 逐片推送
+        }
       );
       setMessages((p) => [...p, { role: "assistant", content: reply }]);
       if (dailyQuota !== null) setDailyQuota((q) => (q ?? 0) + 1);

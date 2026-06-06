@@ -29,34 +29,35 @@ async function request<T>(url: string, body: unknown): Promise<T> {
 }
 
 export const chatService = {
-  /** 发送消息给 AI 导师（非流式，PC + 小程序通用） */
+  /** 非流式发送消息（stream: false）— 小程序 / 通用场景 */
   async sendMessage(
     messages: Message[],
     caseContext: CaseContext,
     caseId: string
-  ) {
+  ): Promise<string> {
     const data = await request<{ reply: string }>("/api/chat", {
       caseContext,
       messages,
       caseId,
+      stream: false,
     });
     return data.reply;
   },
 
-  /** 流式发送（Web 专用，小程序不支持） */
+  /** 流式发送消息（stream: true）— Web 专用 */
   async sendMessageStream(
     messages: Message[],
     caseContext: CaseContext,
     caseId: string,
     onChunk: (text: string) => void
-  ) {
+  ): Promise<string> {
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ caseContext, messages, caseId, stream: true }),
     });
     if (!res.ok) {
-      const data = await res.json();
+      const data = await res.json().catch(() => ({ error: "请求失败" }));
       throw new Error(data.error || "请求失败");
     }
     const reader = res.body?.getReader();

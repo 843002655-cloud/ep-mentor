@@ -20,7 +20,12 @@ const SYSTEM_PROMPT = `你是一位顶级心脏电生理专家导师，拥有30�
 
 export async function POST(request: NextRequest) {
   try {
-    const { caseContext, messages, caseId } = await request.json();
+    const {
+      caseContext,
+      messages,
+      caseId,
+      stream = false,
+    } = await request.json();
 
     if (!process.env.DEEPSEEK_API_KEY) {
       return NextResponse.json(
@@ -41,7 +46,7 @@ export async function POST(request: NextRequest) {
 - 教学提示：${caseContext.hint}
 - 关键知识点：${(caseContext.key_points || []).join("、")}`;
 
-    // Get user for quota tracking
+    // ── Auth & Quota ──────────────────────────────────────────────
     let userId: string | null = null;
     const cookieHeader = request.headers.get("cookie") || "";
     const supabase = createServerClient(
@@ -50,10 +55,12 @@ export async function POST(request: NextRequest) {
       {
         cookies: {
           getAll() {
-            return cookieHeader.split("; ").map((c) => {
-              const [name, ...rest] = c.split("=");
-              return { name, value: rest.join("=") };
-            });
+            return cookieHeader
+              .split("; ")
+              .map((c) => {
+                const [name, ...rest] = c.split("=");
+                return { name, value: rest.join("=") };
+              });
           },
           setAll() {},
         },
@@ -63,7 +70,6 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     userId = user?.id || null;
 
-    // Check daily quota (20 per day per user)
     if (userId) {
       const today = new Date().toISOString().split("T")[0];
       const { count } = await supabase
@@ -80,7 +86,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Build conversation for DeepSeek
     const conversationMessages = messages.map(
       (m: { role: string; content: string }) => ({
         role: m.role === "assistant" ? "assistant" : "user",
@@ -88,46 +93,70 @@ export async function POST(request: NextRequest) {
       })
     );
 
-    // Call DeepSeek
-    const response = await deepseek.chat.completions.create({
+    // ── Non-streaming mode (小程序 / 通用) ─────────────────────────
+    if (!stream) {
+      const response = await deepseek.chat.completions.create({
+        model: MODEL,
+        max_tokens: 500,
+        temperature: 0.7,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT + "\n\n" + contextStr },
+          ...conversationMessages,
+        ],
+      });
+
+      const reply =
+        response.choices[0]?.message?.content || "";
+
+      // Increment quota
+      if (userId) {
+        await recordUsage(cookieHeader, userId, caseId);
+      }
+
+      return NextResponse.json({ reply });
+    }
+
+    // ── Streaming mode (SSE, Web 专用) ────────────────────────────
+    const streamResponse = await deepseek.chat.completions.create({
       model: MODEL,
       max_tokens: 500,
       temperature: 0.7,
+      stream: true,
       messages: [
         { role: "system", content: SYSTEM_PROMPT + "\n\n" + contextStr },
         ...conversationMessages,
       ],
     });
 
-    const reply = response.choices[0]?.message?.content || "（AI 响应格式异常）";
-
-    // Increment quota counter
-    if (userId) {
-      const supabaseAdmin = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        {
-          cookies: {
-            getAll() {
-              return cookieHeader.split("; ").map((c) => {
-                const [name, ...rest] = c.split("=");
-                return { name, value: rest.join("=") };
-              });
-            },
-            setAll() {},
-          },
+    const encoder = new TextEncoder();
+    const readable = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of streamResponse) {
+            const delta = chunk.choices[0]?.delta?.content;
+            if (delta) {
+              controller.enqueue(encoder.encode(delta));
+            }
+          }
+          // Record quota after streaming completes
+          if (userId) {
+            await recordUsage(cookieHeader, userId, caseId);
+          }
+        } catch (e) {
+          console.error("Stream error:", e);
+        } finally {
+          controller.close();
         }
-      );
+      },
+    });
 
-      await supabaseAdmin.from("user_progress").insert({
-        user_id: userId,
-        case_id: caseId,
-        completed_at: new Date().toISOString(),
-        score: 0,
-      });
-    }
-
-    return NextResponse.json({ reply });
+    return new Response(readable, {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
   } catch (error: unknown) {
     const err = error as { message?: string };
     console.error("Chat API error:", err);
@@ -135,5 +164,40 @@ export async function POST(request: NextRequest) {
       { error: err.message || "AI 服务暂时不可用" },
       { status: 500 }
     );
+  }
+}
+
+/** 记录用户对话配额 */
+async function recordUsage(
+  cookieHeader: string,
+  userId: string,
+  caseId: string
+) {
+  try {
+    const supabaseAdmin = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieHeader
+              .split("; ")
+              .map((c) => {
+                const [name, ...rest] = c.split("=");
+                return { name, value: rest.join("=") };
+              });
+          },
+          setAll() {},
+        },
+      }
+    );
+    await supabaseAdmin.from("user_progress").insert({
+      user_id: userId,
+      case_id: caseId,
+      completed_at: new Date().toISOString(),
+      score: 0,
+    });
+  } catch {
+    // quota recording failure shouldn't break the chat
   }
 }
