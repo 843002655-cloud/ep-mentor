@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import AppLayout from "@/components/AppLayout";
+import { chatService, caseService } from "@/lib/services";
+
+const selClass = "w-full px-3 py-2 bg-white border border-[#C5D3E0] rounded text-[#1A2332] text-sm focus:outline-none focus:border-[#1B4F8A]";
 
 export default function AdminGeneratePage() {
   const [category, setCategory] = useState("SVT");
@@ -14,10 +17,8 @@ export default function AdminGeneratePage() {
   const handleGenerate = async () => {
     setGenerating(true); setResult("");
     try {
-      const res = await fetch("/api/generate-case", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ category, difficulty, count }) });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "生成失败");
-      setResult(JSON.stringify(data.cases, null, 2));
+      const cases = await chatService.generateCase(category, difficulty, count);
+      setResult(JSON.stringify(cases, null, 2));
     } catch (err: unknown) { setResult("生成失败：" + (err as Error).message); }
     finally { setGenerating(false); }
   };
@@ -27,14 +28,12 @@ export default function AdminGeneratePage() {
     try {
       const cases = JSON.parse(result);
       if (Array.isArray(cases)) {
-        for (const c of cases) await fetch("/api/cases", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...c, category, difficulty, is_published: false }) });
+        for (const c of cases) await caseService.createCase({ ...c, category, difficulty, is_published: false } as Parameters<typeof caseService.createCase>[0]);
         setResult(""); alert(`成功保存 ${cases.length} 个病例！`);
       }
     } catch { alert("保存失败"); }
     finally { setSaving(false); }
   };
-
-  const selClass = "w-full px-3 py-2 bg-white border border-[#C5D3E0] rounded text-[#1A2332] text-sm focus:outline-none focus:border-[#1B4F8A]";
 
   return (
     <AppLayout>
@@ -55,12 +54,7 @@ export default function AdminGeneratePage() {
             </div>
           )}
         </div>
-        <div className="card">
-          <h3 className="text-lg font-semibold text-[#1A2332] mb-2 font-serif">说明</h3>
-          <ul className="text-sm text-[#6B7F96] space-y-1 list-disc list-inside">
-            <li>AI 生成的案例需经人工审核确认医学准确性</li><li>生成后的案例默认为「未发布」状态</li><li>每次最多生成 5 个案例</li>
-          </ul>
-        </div>
+        <div className="card"><h3 className="text-lg font-semibold text-[#1A2332] mb-2 font-serif">说明</h3><ul className="text-sm text-[#6B7F96] space-y-1 list-disc list-inside"><li>AI 生成的案例需经人工审核确认医学准确性</li><li>生成后的案例默认为「未发布」状态</li><li>每次最多生成 5 个案例</li></ul></div>
       </div>
     </AppLayout>
   );
