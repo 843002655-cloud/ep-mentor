@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS cases (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
-  category TEXT NOT NULL CHECK (category IN ('SVT', 'VT', 'AF', 'WPW')),
+  category TEXT NOT NULL CHECK (category IN ('SVT', 'VT', 'AF', 'AFL')),
   difficulty TEXT NOT NULL CHECK (difficulty IN ('基础', '进阶', '高级')),
   description TEXT NOT NULL DEFAULT '',
   ecg_findings TEXT[] DEFAULT '{}',
@@ -114,14 +114,14 @@ INSERT INTO cases (title, category, difficulty, description, ecg_findings, quest
   true
 ),
 (
-  '无症状预激综合征的处理',
-  'WPW',
+  '典型心房扑动的诊断与消融',
+  'AFL',
   '进阶',
-  '25岁男性，飞行员体检发现心电图异常。心电图示PR间期缩短、QRS波起始部可见delta波，符合预激综合征改变。患者否认任何心悸、晕厥史，平素运动耐量良好。',
-  ARRAY['PR间期 100ms', 'QRS 130ms 可见delta波', 'V1导联delta波正向（左侧旁路）'],
-  '无症状WPW患者是否需要电生理检查和导管消融？职业（飞行员）如何影响决策？',
-  'ACC/HRS指南对无症状WPW的处理有明确分层。高危职业（飞行员、驾驶员）的处理策略与普通人群不同。',
-  ARRAY['无症状WPW危险分层', 'EPS适应证', '高危职业处理', 'ACC/HRS指南2023'],
+  '68岁男性，因反复发作性心悸2个月入院。心悸呈持续性，心率约150次/分，Valsalva动作不能终止。既往有高血压病史。心电图示锯齿状扑动波，下壁导联明显。',
+  ARRAY['心房率300 bpm，心室率150 bpm', '下壁导联可见锯齿状扑动波（F波）', '窄QRS波（QRS < 120ms）', '2:1房室传导比例'],
+  '如何根据体表心电图定位心房扑动的折返路径？典型与不典型房扑的鉴别要点是什么？',
+  '看看下壁导联F波的方向——负向F波提示逆钟向折返（典型AFL），正向F波提示顺钟向折返。CTI依赖性是诊断的关键。',
+  ARRAY['典型AFL折返环', 'CTI峡部消融', '扑动波形态分析', '2:1传导识别'],
   true
 );
 
@@ -192,7 +192,7 @@ CREATE TABLE IF NOT EXISTS quiz_questions (
   options TEXT[] NOT NULL DEFAULT '{}',
   correct INT NOT NULL DEFAULT 0,
   explanation TEXT NOT NULL DEFAULT '',
-  category TEXT NOT NULL DEFAULT '综合' CHECK (category IN ('SVT', 'VT', 'AF', 'WPW', '综合')),
+  category TEXT NOT NULL DEFAULT '综合' CHECK (category IN ('SVT', 'VT', 'AF', 'AFL', '综合')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -209,7 +209,7 @@ INSERT INTO quiz_questions (question, options, correct, explanation, category) V
   '关于 AVNRT（房室结折返性心动过速），以下哪项描述是正确的？',
   ARRAY['通常由房室旁路引起', '折返环位于房室结区域，慢-快型最常见', '心电图可见明显的 delta 波', '首选治疗是腺苷静脉推注，其他方法均无效'],
   1,
-  'AVNRT 的折返环位于房室结区域，最常见的类型是慢-快型（slow-fast），占 80-90%。delta 波是预激综合征（WPW）的特征。',
+  'AVNRT 的折返环位于房室结区域，最常见的类型是慢-快型（slow-fast），占 80-90%。delta 波是预激综合征（AFL）的特征。',
   'SVT'
 ),
 (
@@ -220,11 +220,11 @@ INSERT INTO quiz_questions (question, options, correct, explanation, category) V
   'AF'
 ),
 (
-  '关于 WPW 综合征的心电图特征，以下哪项是正确的？',
-  ARRAY['PR 间期延长 > 200ms', 'QRS 波群增宽，起始部可见 delta 波', 'QRS 波群变窄 < 80ms', 'QT 间期显著缩短'],
-  1,
-  'WPW 综合征典型心电图：PR 间期缩短（<120ms）、QRS 增宽（>120ms）、起始部 delta 波。',
-  'WPW'
+  '典型心房扑动（AFL）的折返环位于？',
+  ARRAY['左心房后壁', '肺静脉口', '三尖瓣-下腔静脉峡部', '冠状窦口'],
+  2,
+  '典型 AFL 折返环位于右心房三尖瓣-下腔静脉峡部（CTI），导管消融线性消融 CTI 成功率 > 95%。',
+  'AFL'
 ),
 (
   '以下哪项是特发性室速最常见的类型？',

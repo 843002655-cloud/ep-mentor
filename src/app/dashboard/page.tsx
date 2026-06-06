@@ -38,7 +38,7 @@ export default function DashboardPage() {
   const today = new Date().toISOString().split("T")[0];
   const todayCount = progress.filter((p) => p.completed_at?.startsWith(today)).length;
 
-  const catColors: Record<string, string> = { SVT: "bg-svt/20 text-svt", VT: "bg-vt/20 text-vt", AF: "bg-af/20 text-af", WPW: "bg-wpw/20 text-wpw" };
+  const catColors: Record<string, string> = { SVT: "bg-svt/20 text-svt", VT: "bg-vt/20 text-vt", AF: "bg-af/20 text-af", AFL: "bg-afl/20 text-afl" };
 
   if (loading) return <AppLayout><div className="max-w-4xl mx-auto px-4 py-12 text-center text-ep-muted">加载中...</div></AppLayout>;
 

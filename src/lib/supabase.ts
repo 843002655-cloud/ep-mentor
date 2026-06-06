@@ -13,7 +13,7 @@ export function getSupabase() {
 export interface Case {
   id: string;
   title: string;
-  category: "SVT" | "VT" | "AF" | "WPW";
+  category: "SVT" | "VT" | "AF" | "AFL";
   difficulty: "基础" | "进阶" | "高级";
   description: string;
   ecg_findings: string[];

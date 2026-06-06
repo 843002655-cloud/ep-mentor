@@ -20,7 +20,7 @@ const config: Config = {
         svt: "#6366f1",
         vt: "#ec4899",
         af: "#f59e0b",
-        wpw: "#8b5cf6",
+        afl: "#8b5cf6",
         // Difficulty colors
         "diff-basic": "#22c55e",
         "diff-intermediate": "#f59e0b",

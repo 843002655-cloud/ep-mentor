@@ -19,7 +19,7 @@ interface Case {
 
 const emptyCase = { title: "", category: "SVT", difficulty: "基础", description: "", ecg_findings: [""], question: "", hint: "", key_points: [""], is_published: false };
 
-const categoryColors: Record<string, string> = { SVT: "bg-svt/20 text-svt", VT: "bg-vt/20 text-vt", AF: "bg-af/20 text-af", WPW: "bg-wpw/20 text-wpw" };
+const categoryColors: Record<string, string> = { SVT: "bg-svt/20 text-svt", VT: "bg-vt/20 text-vt", AF: "bg-af/20 text-af", AFL: "bg-afl/20 text-afl" };
 
 export default function AdminCasesPage() {
   const [cases, setCases] = useState<Case[]>([]);
@@ -86,7 +86,7 @@ export default function AdminCasesPage() {
               <div>
                 <label className="block text-sm font-medium text-ep-muted mb-1">分类</label>
                 <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2 bg-ep-bg border border-slate-600 rounded text-white text-sm focus:outline-none focus:border-ep-primary">
-                  {["SVT", "VT", "AF", "WPW"].map((o) => <option key={o} value={o}>{o}</option>)}
+                  {["SVT", "VT", "AF", "AFL"].map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
               <div>

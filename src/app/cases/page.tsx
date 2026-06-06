@@ -24,7 +24,7 @@ const categories = [
   { value: "SVT", label: "SVT" },
   { value: "VT", label: "VT" },
   { value: "AF", label: "AF" },
-  { value: "WPW", label: "WPW" },
+  { value: "AFL", label: "AFL" },
 ];
 
 const difficulties = [
@@ -38,14 +38,14 @@ const qrsTypes = [
   { value: "", label: "全部" },
   { value: "narrow", label: "窄QRS" },
   { value: "wide", label: "宽QRS" },
-  { value: "delta", label: "预激波" },
+  { value: "flutter", label: "房扑波" },
 ];
 
 const categoryColors: Record<string, string> = {
   SVT: "bg-svt/20 text-svt",
   VT: "bg-vt/20 text-vt",
   AF: "bg-af/20 text-af",
-  WPW: "bg-wpw/20 text-wpw",
+  AFL: "bg-afl/20 text-afl",
 };
 
 const difficultyColors: Record<string, string> = {
@@ -65,7 +65,7 @@ function matchQrs(findings: string[], qrsType: string): boolean {
   if (!qrsType) return true;
   if (qrsType === "narrow") return findings.some((f) => f.includes("窄QRS") || f.includes("窄 QRS"));
   if (qrsType === "wide") return findings.some((f) => f.includes("宽QRS") || f.includes("宽 QRS"));
-  if (qrsType === "delta") return findings.some((f) => f.includes("delta") || f.includes("预激") || f.includes("WPW"));
+  if (qrsType === "flutter") return findings.some((f) => f.includes("flutter") || f.includes("扑动") || f.includes("AFL"));
   return true;
 }
 
@@ -137,7 +137,7 @@ function CaseList() {
         <p className="text-xs text-ep-muted mb-4 flex flex-wrap items-center gap-x-4 gap-y-1">
           <span>⚡ 50+ 精选案例</span>
           <span className="text-slate-600">|</span>
-          <span>🎯 覆盖 SVT / VT / AF / WPW</span>
+          <span>🎯 覆盖 SVT / VT / AF / AFL</span>
           <span className="text-slate-600">|</span>
           <span>👨‍⚕️ AI 苏格拉底式教学</span>
         </p>

@@ -5,7 +5,7 @@ const features = [
   {
     icon: "📚",
     title: "病例库",
-    desc: "分类浏览 SVT、VT、AF、预激综合征等经典电生理案例",
+    desc: "分类浏览 SVT、VT、AF、心房扑动等经典电生理案例",
     href: "/cases",
   },
   {
@@ -32,7 +32,7 @@ const categories = [
   { name: "SVT", color: "bg-svt/20 text-svt border-svt/30", desc: "室上性心动过速" },
   { name: "VT", color: "bg-vt/20 text-vt border-vt/30", desc: "室性心动过速" },
   { name: "AF", color: "bg-af/20 text-af border-af/30", desc: "心房颤动" },
-  { name: "WPW", color: "bg-wpw/20 text-wpw border-wpw/30", desc: "预激综合征" },
+  { name: "AFL", color: "bg-afl/20 text-afl border-afl/30", desc: "心房扑动" },
 ];
 
 export default function Home() {

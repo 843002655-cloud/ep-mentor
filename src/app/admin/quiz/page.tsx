@@ -6,7 +6,7 @@ import AppLayout from "@/components/AppLayout";
 interface QuizQuestion { id: string; question: string; options: string[]; correct: number; explanation: string; category: string; created_at: string; }
 
 const empty = { question: "", options: ["", "", "", ""], correct: 0, explanation: "", category: "SVT" };
-const cats = ["SVT", "VT", "AF", "WPW", "综合"];
+const cats = ["SVT", "VT", "AF", "AFL", "综合"];
 
 export default function AdminQuizPage() {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);

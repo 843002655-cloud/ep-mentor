@@ -25,7 +25,7 @@ interface Message {
 
 const categoryColors: Record<string, string> = {
   SVT: "bg-svt/20 text-svt", VT: "bg-vt/20 text-vt",
-  AF: "bg-af/20 text-af", WPW: "bg-wpw/20 text-wpw",
+  AF: "bg-af/20 text-af", AFL: "bg-afl/20 text-afl",
 };
 
 const difficultyColors: Record<string, string> = {

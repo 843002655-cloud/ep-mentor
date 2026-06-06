@@ -15,7 +15,7 @@ interface QuizQuestion {
 const FALLBACK: QuizQuestion[] = [
   { id: "fb1", question: "关于 AVNRT，以下哪项正确？", options: ["由房室旁路引起", "折返环在房室结区域，慢快型最常见", "可见 delta 波", "治疗仅限腺苷"], correct: 1, explanation: "AVNRT 折返环在房室结，慢快型占 80-90%。", category: "SVT" },
   { id: "fb2", question: "房颤导管消融主要靶点？", options: ["房室结", "希氏束", "肺静脉", "冠状窦"], correct: 2, explanation: "肺静脉是房颤触发灶最常见来源。", category: "AF" },
-  { id: "fb3", question: "WPW 心电图特征？", options: ["PR > 200ms", "QRS 增宽 + delta 波", "QRS < 80ms", "QT 显著缩短"], correct: 1, explanation: "WPW：PR 缩短、QRS 增宽、delta 波。", category: "WPW" },
+  { id: "fb3", question: "典型心房扑动（AFL）的折返环位于？", options: ["左心房后壁", "肺静脉口", "三尖瓣-下腔静脉峡部", "冠状窦口"], correct: 2, explanation: "典型 AFL 折返环位于右心房三尖瓣-下腔静脉峡部（CTI），导管消融成功率 > 95%。", category: "AFL" },
   { id: "fb4", question: "最常见特发性 VT 类型？", options: ["ARVC 相关 VT", "缺血性 VT", "RVOT-VT", "束支折返性 VT"], correct: 2, explanation: "RVOT-VT 占特发性 VT 的 60-80%。", category: "VT" },
   { id: "fb5", question: "正常 HV 间期范围？", options: ["10-20 ms", "35-55 ms", "80-120 ms", "150-200 ms"], correct: 1, explanation: "HV 间期正常 35-55ms。", category: "SVT" },
 ];

@@ -49,7 +49,7 @@ export default function AdminGeneratePage() {
             <div>
               <label className="block text-sm font-medium text-ep-muted mb-1">分类</label>
               <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-3 py-2 bg-ep-bg border border-slate-600 rounded text-white text-sm focus:outline-none focus:border-ep-primary">
-                {["SVT", "VT", "AF", "WPW"].map((o) => <option key={o} value={o}>{o}</option>)}
+                {["SVT", "VT", "AF", "AFL"].map((o) => <option key={o} value={o}>{o}</option>)}
               </select>
             </div>
             <div>
