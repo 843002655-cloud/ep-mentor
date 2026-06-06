@@ -1,18 +1,5 @@
 import type { Metadata } from "next";
-import { Noto_Sans_SC, Noto_Serif_SC } from "next/font/google";
 import "./globals.css";
-
-const notoSansSC = Noto_Sans_SC({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-noto-sans-sc",
-});
-
-const notoSerifSC = Noto_Serif_SC({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-  variable: "--font-noto-serif-sc",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.yovigo.cn"),
@@ -41,7 +28,7 @@ export default function RootLayout({
       <head>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" async />
       </head>
-      <body className={`${notoSansSC.variable} ${notoSerifSC.variable} antialiased`}>
+      <body className="antialiased">
         {children}
       </body>
     </html>

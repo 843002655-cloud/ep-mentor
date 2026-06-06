@@ -35,8 +35,8 @@ const config: Config = {
         "diff-advanced": "#9B2C2C",
       },
       fontFamily: {
-        sans: ["var(--font-noto-sans-sc)", "sans-serif"],
-        serif: ["var(--font-noto-serif-sc)", "serif"],
+        sans: ["-apple-system", "BlinkMacSystemFont", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", "sans-serif"],
+        serif: ["PingFang SC", "STSong", "SimSun", "Noto Serif CJK SC", "serif"],
       },
     },
   },

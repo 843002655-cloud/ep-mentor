@@ -99,7 +99,7 @@ html {
 body {
   color: #3D5166;
   background: #F5F8FC;
-  font-family: var(--font-noto-sans-sc), sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", sans-serif;
 }
 
 /* 安全区域适配（刘海屏 / 底部 Home 条） */
