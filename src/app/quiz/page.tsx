@@ -30,7 +30,7 @@ export default function QuizPage() {
     });
   }, []);
 
-  if (loading) return <AppLayout><div className="max-w-3xl mx-auto px-4 py-12 text-center text-[#6B7F96]">加载题库中...</div></AppLayout>;
+  if (loading) return <AppLayout><div className="max-w-3xl mx-auto px-4 py-12 text-center text-[#6B7F96]">准备题目中...</div></AppLayout>;
   if (!questions.length) return <AppLayout><div className="max-w-3xl mx-auto px-4 py-12 text-center text-[#6B7F96]">暂无题目</div></AppLayout>;
 
   const q = questions[currentQ];

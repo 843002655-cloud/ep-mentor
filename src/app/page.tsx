@@ -26,14 +26,14 @@ export default function Home() {
             <h1 className="text-5xl sm:text-6xl font-bold text-[#1A2332] mb-6 font-serif">
               <span className="text-[#1B4F8A]">EP</span> Mentor
             </h1>
-            <p className="text-xl text-[#6B7F96] mb-4">心脏电生理 AI 导师</p>
+            <p className="text-xl text-[#6B7F96] mb-4">每一份心电图，都是一道待解的逻辑题</p>
             <p className="text-lg text-[#6B7F96] mb-10 leading-relaxed">
-              专为心脏电生理医生打造的 AI 教学平台。<br />
-              通过苏格拉底式对话教学，引导你深入理解每一份心电图的背后逻辑。
+              不灌输结论，不堆砌幻灯。<br />
+              用苏格拉底的方式，推演心律失常背后的电生理逻辑。
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href={ROUTES.CASES} className="bg-[#1B4F8A] hover:bg-[#154070] text-white font-medium py-3 px-8 rounded-lg transition-colors text-lg">
-                开始学习
+                进入病例库
               </Link>
               <Link href={ROUTES.AUTH} className="border border-[#C5D3E0] text-[#4B6080] hover:border-[#1B4F8A] hover:text-[#1B4F8A] font-medium py-3 px-8 rounded-lg transition-colors text-lg">
                 注册 / 登录

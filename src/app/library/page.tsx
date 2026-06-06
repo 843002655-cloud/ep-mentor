@@ -44,7 +44,7 @@ export default function LibraryPage() {
               }`}>{c.label}</button>
           ))}
         </div>
-        {loading ? <div className="text-center py-20 text-[#6B7F96]">加载中...</div>
+        {loading ? <div className="text-center py-20 text-[#6B7F96]">整理资料中...</div>
         : resources.length === 0 ? <div className="text-center py-20 text-[#6B7F96]"><p className="text-lg">暂无资料</p></div>
         : <div className="space-y-4">
             {resources.map((r) => (

@@ -52,7 +52,7 @@ export default function AdminCasesPage() {
             <div className="flex gap-3"><button onClick={handleSave} disabled={saving} className="btn-primary">{saving ? "保存中..." : "保存"}</button><button onClick={() => { setEditingId(null); setIsNew(false); }} className="btn-secondary">取消</button></div>
           </div>
         )}
-        {loading ? <div className="text-center py-20 text-[#6B7F96]">加载中...</div> : (
+        {loading ? <div className="text-center py-20 text-[#6B7F96]">查询病例中...</div> : (
           <div className="space-y-3">{cases.map((c) => (
             <div key={c.id} className="card flex flex-wrap items-center justify-between gap-3 py-4">
               <div className="flex items-center gap-3"><span className={`badge-category ${catColors[c.category]||""}`}>{c.category}</span><div><div className="text-[#1A2332] font-medium">{c.title}</div><div className="text-xs text-[#8FA0B4]">{c.difficulty} | {c.is_published ? "🟢 已发布" : "⚪ 未发布"}</div></div></div>

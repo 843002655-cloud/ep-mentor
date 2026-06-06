@@ -94,7 +94,7 @@ function CaseList() {
           <span className="text-xs text-[#8FA0B4] mr-1 shrink-0 flex items-center">QRS</span>
           {qrsTypes.map((q) => <FilterBtn key={q.value} active={qrsType===q.value} onClick={()=>setQrsType(q.value)}>{q.label}</FilterBtn>)}
         </div>
-        {loading ? <div className="text-center py-20 text-[#6B7F96]">加载中...</div>
+        {loading ? <div className="text-center py-20 text-[#6B7F96]">标测信号中...</div>
         : filtered.length===0 ? <div className="text-center py-20"><p className="text-[#6B7F96]">暂无匹配的病例</p></div>
         : <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((c) => (
@@ -124,5 +124,5 @@ function CaseList() {
 }
 
 export default function CasesPage() {
-  return <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-[#F5F8FC]"><p className="text-[#6B7F96]">加载中...</p></div>}><CaseList /></Suspense>;
+  return <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-[#F5F8FC]"><p className="text-[#6B7F96]">标测信号中...</p></div>}><CaseList /></Suspense>;
 }

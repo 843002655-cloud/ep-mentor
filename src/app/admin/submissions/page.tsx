@@ -36,7 +36,7 @@ export default function AdminSubmissionsPage() {
             ))}
           </div>
         </div>
-        {loading ? <div className="text-center py-20 text-[#6B7F96]">加载中...</div>
+        {loading ? <div className="text-center py-20 text-[#6B7F96]">加载投稿列表...</div>
         : submissions.length === 0 ? <div className="text-center py-20 text-[#6B7F96]">暂无投稿</div>
         : <div className="space-y-4">{submissions.map((s) => (
             <div key={s.id} className="card">

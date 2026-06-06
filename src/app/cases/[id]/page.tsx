@@ -35,7 +35,7 @@ export default function CaseDetailPage() {
   useEffect(() => {
     caseService.getCaseById(caseId).then((c) => {
       setCaseData(c);
-      setMessages([{ role: "assistant", content: `你好！我是你的电生理导师。\n\n今天的病例是：**${c.title}**\n\n${c.question}\n\n💡 提示：${c.hint}\n\n请分享你的初步分析，我们来一起探讨。` }]);
+      setMessages([{ role: "assistant", content: `欢迎来到电生理导管室。\n\n这里没有考试，只有探索。每一个错误推理，都是通往正确答案的必经路径。\n\n今日病例：**${c.title}**\n\n${c.question}\n\n💡 提示：${c.hint}\n\n请大胆分享你的分析——说错了也没关系。` }]);
       setLoading(false);
     });
     // Fetch initial quota from DB
@@ -80,7 +80,7 @@ export default function CaseDetailPage() {
   };
 
   useEffect(() => { chatRef.current?.scrollTo(0, chatRef.current.scrollHeight); }, [messages]);
-  if (loading) return <AppLayout><div className="max-w-4xl mx-auto px-4 py-12 text-center text-[#6B7F96]">加载中...</div></AppLayout>;
+  if (loading) return <AppLayout><div className="max-w-4xl mx-auto px-4 py-12 text-center text-[#6B7F96]">标测信号中...</div></AppLayout>;
   if (!caseData) return <AppLayout><div className="max-w-4xl mx-auto px-4 py-12 text-center text-[#6B7F96]">病例未找到</div></AppLayout>;
 
   return (

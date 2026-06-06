@@ -43,7 +43,7 @@ export default function SubmitPage() {
         <p className="text-[#6B7F96] mb-8">提交你的真实脱敏病例</p>
         <div className="card">
           <div className="bg-[#FEF3E2] border border-[#854F0B]/20 rounded-lg p-4 mb-6">
-            <p className="text-sm text-[#854F0B]">⚠️ <strong>重要：</strong>请务必去除所有患者隐私信息。</p>
+            <p className="text-sm text-[#854F0B]">📋 仅支持文字描述和心电图特征数据。请勿上传患者影像资料，去除姓名/住院号等隐私信息。</p>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             {[

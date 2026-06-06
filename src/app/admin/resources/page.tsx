@@ -53,7 +53,7 @@ export default function AdminResourcesPage() {
             </div>
           </div>
         )}
-        {loading ? <div className="text-center py-20 text-[#6B7F96]">加载中...</div> : (
+        {loading ? <div className="text-center py-20 text-[#6B7F96]">加载资料...</div> : (
           <div className="space-y-3">{resources.map((r) => (
             <div key={r.id} className="card flex flex-wrap items-center justify-between gap-3 py-4">
               <div className="flex items-center gap-3 flex-1 min-w-0">

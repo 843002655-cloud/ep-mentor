@@ -58,7 +58,7 @@ export default function AdminQuizPage() {
             </div>
           </div>
         )}
-        {loading ? <div className="text-center py-20 text-[#6B7F96]">加载中...</div> : questions.length===0 ? <div className="text-center py-20 text-[#6B7F96]">还没有题目</div> : (
+        {loading ? <div className="text-center py-20 text-[#6B7F96]">加载题库...</div> : questions.length===0 ? <div className="text-center py-20 text-[#6B7F96]">还没有题目</div> : (
           <div className="space-y-3">{questions.map((q,idx)=>(
             <div key={q.id} className="card py-4">
               <div className="flex items-start justify-between gap-3">
