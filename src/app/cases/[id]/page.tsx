@@ -68,7 +68,7 @@ export default function CaseDetailPage() {
 
   const handleSend = async () => {
     if (!input.trim() || sending || !caseData) return;
-    const userMessage: Message = { role: "user", content: input };
+    const userMessage: Message = { role: "user" as const, content: input };
     setMessages((p) => [...p, userMessage]); setInput(""); setSending(true);
     try {
       const rawReply = await chatService.sendMessageStream([...messages, userMessage].slice(-10), caseData as CaseInput, caseId, () => {});
@@ -220,17 +220,45 @@ export default function CaseDetailPage() {
             <div className="grid lg:grid-cols-5 gap-4">
               {/* EGM panel — left on desktop, top on mobile */}
               <div className="lg:col-span-2 order-1 lg:order-1">
-                <div className="bg-[#F5F8FC] border border-[#DDE5EE] rounded-lg p-4 text-center sticky top-20">
-                  <div className="text-3xl mb-2">📊</div>
-                  <p className="text-xs font-medium text-[#1A2332] mb-1">动态 EGM 播放器</p>
-                  <div className="flex items-center justify-center gap-3 my-3">
-                    <button className="w-8 h-8 rounded-full bg-[#1B4F8A] text-white flex items-center justify-center text-xs">▶</button>
-                    <div className="flex-1 h-1 bg-[#DDE5EE] rounded-full relative">
-                      <div className="absolute left-0 top-0 bottom-0 w-1/3 bg-[#1B4F8A] rounded-full" />
+                <div className="bg-[#0a0e1a] border border-[#334155] rounded-lg overflow-hidden sticky top-20">
+                  {/* EGM header */}
+                  <div className="flex items-center justify-between px-3 py-2 bg-[#111827] border-b border-[#1e293b]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-red-500" />
+                      <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                      <span className="w-2 h-2 rounded-full bg-green-500" />
                     </div>
-                    <span className="text-xs text-[#8FA0B4]">0:00</span>
+                    <span className="text-xs text-slate-400">EGM Viewer · 25 mm/s</span>
+                    <div className="w-12" />
                   </div>
-                  <p className="text-xs text-[#8FA0B4]">（EGM 播放功能后续接入）</p>
+                  {/* Lead list */}
+                  <div className="p-2 space-y-1 text-xs font-mono">
+                    {["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V6",
+                      "HRA d", "HIS p", "CS 9-10", "CS 1-2", "RVa d"].map((lead) => (
+                      <div key={lead} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-[#1e293b] cursor-pointer group">
+                        <span className="text-slate-500 w-12 shrink-0">{lead}</span>
+                        <div className="flex-1 h-4 bg-[#1e293b] rounded-sm relative overflow-hidden">
+                          <div className="absolute inset-0 opacity-30">
+                            <svg viewBox="0 0 200 16" className="w-full h-full">
+                              <polyline points="0,8 20,8 22,3 28,12 32,8 40,8 42,2 48,13 52,8 200,8" fill="none" stroke="#60a5fa" strokeWidth="0.5" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Controls */}
+                  <div className="flex items-center gap-3 px-3 py-2 bg-[#111827] border-t border-[#1e293b]">
+                    <button className="w-7 h-7 rounded-full bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center text-xs" title="快退">⏮</button>
+                    <button className="w-8 h-8 rounded-full bg-[#1B4F8A] hover:bg-[#154070] text-white flex items-center justify-center text-sm" title="播放">▶</button>
+                    <button className="w-7 h-7 rounded-full bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center text-xs" title="快进">⏭</button>
+                    <div className="flex-1 h-1 bg-slate-700 rounded-full relative cursor-pointer">
+                      <div className="absolute left-0 top-0 bottom-0 w-1/3 bg-[#1B4F8A] rounded-full" />
+                      <div className="absolute left-1/3 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow" />
+                    </div>
+                    <span className="text-xs text-slate-400 font-mono">0:42 / 2:15</span>
+                    <button className="text-xs text-slate-400 hover:text-white" title="测量">📏</button>
+                  </div>
                 </div>
               </div>
 
@@ -253,6 +281,50 @@ export default function CaseDetailPage() {
                   ))}
                   {sending && <div className="flex justify-start"><div className="bg-[#F5F8FC] text-[#8FA0B4] rounded-xl px-4 py-3 text-sm">AI 导师思考中...</div></div>}
                 </div>
+                {/* Action buttons */}
+                <div className="flex items-center gap-2 mb-3">
+                  <button
+                    onClick={async () => {
+                      if (sending || !caseData) return;
+                      setSending(true);
+                      try {
+                        const reply = await chatService.sendMessage(
+                          [...messages, { role: "user" as const, content: "我需要提示，请给我更具体的观察方向" }].slice(-10),
+                          caseData as CaseInput, caseId
+                        );
+                        let display = reply.reply;
+                        try { const p = JSON.parse(reply.reply); display = (p.content||reply.reply)+(p.hint?"\n\n💡 提示："+p.hint:""); } catch {}
+                        setMessages((p) => [...p, { role: "assistant", content: "💡 " + display }]);
+                        if (quota !== null) setQuota((q) => q ? { ...q, remaining: q.remaining - 1 } : null);
+                      } catch { /* ignore */ }
+                      finally { setSending(false); }
+                    }}
+                    disabled={sending || quotaExhausted || messages.length === 0}
+                    className="text-xs px-3 py-1.5 border border-[#C5D3E0] rounded-lg text-[#4B6080] hover:border-[#1B4F8A] hover:text-[#1B4F8A] transition-colors disabled:opacity-40 shrink-0"
+                    title="AI 给出更具体的观察方向"
+                  >
+                    💡 提示
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!caseData) return;
+                      setMessages((p) => [
+                        ...p,
+                        { role: "assistant" as const, content: "好的，我们进入下一个观察点。" + caseData.question },
+                      ]);
+                    }}
+                    disabled={sending || quotaExhausted}
+                    className="text-xs px-3 py-1.5 border border-[#C5D3E0] rounded-lg text-[#4B6080] hover:border-[#1B4F8A] hover:text-[#1B4F8A] transition-colors disabled:opacity-40 shrink-0"
+                    title="跳过当前步骤，进入下一步"
+                  >
+                    ⏭ 跳过
+                  </button>
+                  <div className="flex-1" />
+                  <span className="text-xs text-[#8FA0B4]">
+                    {messages.length > 0 ? `${messages.length} 条消息` : ""}
+                  </span>
+                </div>
+
                 <div className="flex gap-2 sm:gap-3">
                   <textarea value={input} onChange={(e)=>setInput(e.target.value)} onKeyDown={(e)=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();handleSend();}}} placeholder={quotaExhausted ? "今日次数已用完" : "输入你的分析，按 Enter 发送..."} rows={2} disabled={sending || quotaExhausted} className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-[#C5D3E0] rounded-lg text-sm text-[#1A2332] placeholder-[#8FA0B4] focus:outline-none focus:border-[#1B4F8A] resize-none disabled:bg-gray-100" />
                   <button onClick={handleSend} disabled={sending||!input.trim()||quotaExhausted} className="btn-primary self-end disabled:opacity-50 text-sm px-4">发送</button>
