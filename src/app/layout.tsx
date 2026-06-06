@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
-import { Noto_Sans_SC } from "next/font/google";
+import { Noto_Sans_SC, Noto_Serif_SC } from "next/font/google";
 import "./globals.css";
 
 const notoSansSC = Noto_Sans_SC({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500"],
   variable: "--font-noto-sans-sc",
+});
+
+const notoSerifSC = Noto_Serif_SC({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-noto-serif-sc",
 });
 
 export const metadata: Metadata = {
@@ -21,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body className={`${notoSansSC.variable} antialiased`}>
+      <body className={`${notoSansSC.variable} ${notoSerifSC.variable} antialiased`}>
         {children}
       </body>
     </html>

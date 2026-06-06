@@ -2,66 +2,39 @@ import Link from "next/link";
 import AppLayout from "@/components/AppLayout";
 
 const features = [
-  {
-    icon: "📚",
-    title: "病例库",
-    desc: "分类浏览 SVT、VT、AF、心房扑动等经典电生理案例",
-    href: "/cases",
-  },
-  {
-    icon: "🤖",
-    title: "AI 导师",
-    desc: "苏格拉底式教学，引导你独立思考而非直接给答案",
-    href: "/cases",
-  },
-  {
-    icon: "📝",
-    title: "知识测验",
-    desc: "选择题形式巩固知识点，检验学习成果",
-    href: "/quiz",
-  },
-  {
-    icon: "📤",
-    title: "病例投稿",
-    desc: "提交你的真实脱敏病例，与同行分享临床经验",
-    href: "/submit",
-  },
+  { icon: "📚", title: "病例库", desc: "分类浏览 SVT、VT、AF、心房扑动等经典电生理案例", href: "/cases" },
+  { icon: "🤖", title: "AI 导师", desc: "苏格拉底式教学，引导你独立思考而非直接给答案", href: "/cases" },
+  { icon: "📝", title: "知识测验", desc: "选择题形式巩固知识点，检验学习成果", href: "/quiz" },
+  { icon: "📤", title: "病例投稿", desc: "提交你的真实脱敏病例，与同行分享临床经验", href: "/submit" },
 ];
 
 const categories = [
-  { name: "SVT", color: "bg-svt/20 text-svt border-svt/30", desc: "室上性心动过速" },
-  { name: "VT", color: "bg-vt/20 text-vt border-vt/30", desc: "室性心动过速" },
-  { name: "AF", color: "bg-af/20 text-af border-af/30", desc: "心房颤动" },
-  { name: "AFL", color: "bg-afl/20 text-afl border-afl/30", desc: "心房扑动" },
+  { name: "SVT", color: "bg-[#EBF2FA] text-[#1B4F8A] border-[#C5D3E0]", desc: "室上性心动过速" },
+  { name: "VT", color: "bg-[#FDE8E8] text-[#9B2C2C] border-[#F5C6C6]", desc: "室性心动过速" },
+  { name: "AF", color: "bg-[#FEF3E2] text-[#854F0B] border-[#F5D8A8]", desc: "心房颤动" },
+  { name: "AFL", color: "bg-[#EDE9FB] text-[#4C3D9E] border-[#C5BEF0]", desc: "心房扑动" },
 ];
 
 export default function Home() {
   return (
     <AppLayout>
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-ep-primary/10 via-transparent to-ep-secondary/10" />
+      <section className="relative overflow-hidden bg-white border-b border-[#E8ECF0]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 relative">
           <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-5xl sm:text-6xl font-bold text-white mb-6">
-              <span className="text-ep-primary">EP</span> Mentor
+            <h1 className="text-5xl sm:text-6xl font-bold text-[#1A2332] mb-6 font-serif">
+              <span className="text-[#1B4F8A]">EP</span> Mentor
             </h1>
-            <p className="text-xl text-ep-muted mb-4">
-              心脏电生理 AI 导师
-            </p>
-            <p className="text-lg text-ep-muted mb-10 leading-relaxed">
-              专为心脏电生理医生打造的 AI 教学平台。
-              <br />
+            <p className="text-xl text-[#6B7F96] mb-4">心脏电生理 AI 导师</p>
+            <p className="text-lg text-[#6B7F96] mb-10 leading-relaxed">
+              专为心脏电生理医生打造的 AI 教学平台。<br />
               通过苏格拉底式对话教学，引导你深入理解每一份心电图的背后逻辑。
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/cases" className="btn-primary text-lg py-3 px-8">
+              <Link href="/cases" className="bg-[#1B4F8A] hover:bg-[#154070] text-white font-medium py-3 px-8 rounded-lg transition-colors text-lg">
                 开始学习
               </Link>
-              <Link
-                href="/auth"
-                className="border border-slate-600 text-white hover:bg-slate-800 font-medium py-3 px-8 rounded-lg transition-colors text-lg"
-              >
+              <Link href="/auth" className="border border-[#C5D3E0] text-[#4B6080] hover:border-[#1B4F8A] hover:text-[#1B4F8A] font-medium py-3 px-8 rounded-lg transition-colors text-lg">
                 注册 / 登录
               </Link>
             </div>
@@ -71,17 +44,13 @@ export default function Home() {
 
       {/* Features */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <h2 className="text-3xl font-bold text-center text-white mb-12">
-          核心功能
-        </h2>
+        <h2 className="text-3xl font-bold text-center text-[#1A2332] mb-12 font-serif">核心功能</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((f) => (
             <Link key={f.title} href={f.href} className="card group">
               <div className="text-3xl mb-4">{f.icon}</div>
-              <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-ep-primary transition-colors">
-                {f.title}
-              </h3>
-              <p className="text-sm text-ep-muted leading-relaxed">{f.desc}</p>
+              <h3 className="text-lg font-semibold text-[#1A2332] mb-2 group-hover:text-[#1B4F8A] transition-colors">{f.title}</h3>
+              <p className="text-sm text-[#6B7F96] leading-relaxed">{f.desc}</p>
             </Link>
           ))}
         </div>
@@ -89,16 +58,10 @@ export default function Home() {
 
       {/* Categories */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <h2 className="text-3xl font-bold text-center text-white mb-12">
-          病例分类
-        </h2>
+        <h2 className="text-3xl font-bold text-center text-[#1A2332] mb-12 font-serif">病例分类</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {categories.map((cat) => (
-            <Link
-              key={cat.name}
-              href={`/cases?category=${cat.name}`}
-              className={`border rounded-xl p-6 text-center transition-all hover:scale-105 ${cat.color}`}
-            >
+            <Link key={cat.name} href={`/cases?category=${cat.name}`} className={`border rounded-xl p-6 text-center transition-all hover:scale-105 ${cat.color}`}>
               <div className="text-2xl font-bold mb-1">{cat.name}</div>
               <div className="text-xs opacity-80">{cat.desc}</div>
             </Link>

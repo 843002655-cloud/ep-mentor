@@ -42,16 +42,16 @@ const qrsTypes = [
 ];
 
 const categoryColors: Record<string, string> = {
-  SVT: "bg-svt/20 text-svt",
-  VT: "bg-vt/20 text-vt",
-  AF: "bg-af/20 text-af",
-  AFL: "bg-afl/20 text-afl",
+  SVT: "bg-[#EBF2FA] text-[#1B4F8A]",
+  VT: "bg-[#FDE8E8] text-[#9B2C2C]",
+  AF: "bg-[#FEF3E2] text-[#854F0B]",
+  AFL: "bg-[#EDE9FB] text-[#4C3D9E]",
 };
 
 const difficultyColors: Record<string, string> = {
-  "基础": "bg-diff-basic/20 text-diff-basic",
-  "进阶": "bg-diff-intermediate/20 text-diff-intermediate",
-  "高级": "bg-diff-advanced/20 text-diff-advanced",
+  "基础": "bg-[#E8F4F0] text-[#0F6E56]",
+  "进阶": "bg-[#FEF3E2] text-[#854F0B]",
+  "高级": "bg-[#FDE8E8] text-[#9B2C2C]",
 };
 
 const studyTime: Record<string, string> = {
@@ -60,7 +60,6 @@ const studyTime: Record<string, string> = {
   "高级": "40 分钟",
 };
 
-// QRS 类型关键词匹配
 function matchQrs(findings: string[], qrsType: string): boolean {
   if (!qrsType) return true;
   if (qrsType === "narrow") return findings.some((f) => f.includes("窄QRS") || f.includes("窄 QRS"));
@@ -69,21 +68,13 @@ function matchQrs(findings: string[], qrsType: string): boolean {
   return true;
 }
 
-const FilterButton = ({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) => (
+const FilterButton = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
   <button
     onClick={onClick}
     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
       active
-        ? "bg-ep-primary/20 text-ep-primary border-ep-primary/50"
-        : "bg-ep-card text-ep-muted border-slate-700 hover:border-slate-500"
+        ? "bg-[#1B4F8A] text-white border-[#1B4F8A]"
+        : "bg-white text-[#4B6080] border-[#C5D3E0] hover:border-[#1B4F8A] hover:text-[#1B4F8A]"
     }`}
   >
     {active && "✓ "}
@@ -102,24 +93,16 @@ function CaseList() {
   const [loggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => {
-    getSupabase().auth.getUser().then(({ data: { user } }) => {
-      setLoggedIn(!!user);
+    getSupabase().auth.getUser().then(({ data: { user } }) => setLoggedIn(!!user));
+  }, []);
+
+  useEffect(() => {
+    fetch(`/api/cases`).then((r) => r.json()).then((data) => {
+      setAllCases(data.cases || []);
+      setLoading(false);
     });
   }, []);
 
-  // Fetch all cases on mount, then filter client-side
-  useEffect(() => {
-    const fetchCases = async () => {
-      setLoading(true);
-      const res = await fetch(`/api/cases`);
-      const data = await res.json();
-      setAllCases(data.cases || []);
-      setLoading(false);
-    };
-    fetchCases();
-  }, []);
-
-  // Client-side filtering
   const filteredCases = allCases.filter((c) => {
     if (category && c.category !== category) return false;
     if (difficulty && c.difficulty !== difficulty) return false;
@@ -130,24 +113,24 @@ function CaseList() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h1 className="text-3xl font-bold text-white mb-2">病例库</h1>
-        <p className="text-ep-muted mb-3">
+        <h1 className="text-3xl font-bold text-[#1A2332] mb-2 font-serif">病例库</h1>
+        <p className="text-[#6B7F96] mb-3">
           从 SVT 鉴别到室速标测，AI 导师引导你像专家一样思考每一个决策点
         </p>
-        <p className="text-xs text-ep-muted mb-4 flex flex-wrap items-center gap-x-4 gap-y-1">
+        <p className="text-xs text-[#8FA0B4] mb-4 flex flex-wrap items-center gap-x-4 gap-y-1">
           <span>⚡ 50+ 精选案例</span>
-          <span className="text-slate-600">|</span>
+          <span className="text-[#C5D3E0]">|</span>
           <span>🎯 覆盖 SVT / VT / AF / AFL</span>
-          <span className="text-slate-600">|</span>
+          <span className="text-[#C5D3E0]">|</span>
           <span>👨‍⚕️ AI 苏格拉底式教学</span>
         </p>
 
         {!loggedIn && (
-          <div className="mb-8 px-4 py-3 rounded-xl border border-[#6366f1]/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" style={{ background: "rgba(99,102,241,0.08)" }}>
-            <span className="text-sm text-white">
+          <div className="mb-8 px-4 py-3 rounded-xl border border-[#1B4F8A]/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" style={{ background: "#EBF2FA" }}>
+            <span className="text-sm text-[#1A2332]">
               🎓 免费注册即可与 AI 导师对话，开始学习
             </span>
-            <a href="/auth?register=1" className="text-sm font-medium text-[#a5b4fc] hover:text-white transition-colors whitespace-nowrap self-end sm:self-auto">
+            <a href="/auth?register=1" className="text-sm font-medium text-[#1B4F8A] hover:text-[#154070] transition-colors whitespace-nowrap self-end sm:self-auto">
               立即注册 →
             </a>
           </div>
@@ -156,38 +139,28 @@ function CaseList() {
         {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-8 items-center">
           {categories.map((c) => (
-            <FilterButton key={c.value} active={category === c.value} onClick={() => setCategory(c.value)}>
-              {c.label}
-            </FilterButton>
+            <FilterButton key={c.value} active={category === c.value} onClick={() => setCategory(c.value)}>{c.label}</FilterButton>
           ))}
-          <div className="w-px bg-slate-700 mx-2 h-6" />
+          <div className="w-px bg-[#E8ECF0] mx-2 h-6" />
           {difficulties.map((d) => (
-            <FilterButton key={d.value} active={difficulty === d.value} onClick={() => setDifficulty(d.value)}>
-              {d.label}
-            </FilterButton>
+            <FilterButton key={d.value} active={difficulty === d.value} onClick={() => setDifficulty(d.value)}>{d.label}</FilterButton>
           ))}
-          <div className="w-px bg-slate-700 mx-2 h-6" />
-          <span className="text-xs text-ep-muted mr-1">QRS</span>
+          <div className="w-px bg-[#E8ECF0] mx-2 h-6" />
+          <span className="text-xs text-[#8FA0B4] mr-1">QRS</span>
           {qrsTypes.map((q) => (
-            <FilterButton key={q.value} active={qrsType === q.value} onClick={() => setQrsType(q.value)}>
-              {q.label}
-            </FilterButton>
+            <FilterButton key={q.value} active={qrsType === q.value} onClick={() => setQrsType(q.value)}>{q.label}</FilterButton>
           ))}
         </div>
 
         {loading ? (
-          <div className="text-center py-20 text-ep-muted">加载中...</div>
+          <div className="text-center py-20 text-[#6B7F96]">加载中...</div>
         ) : filteredCases.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-ep-muted">暂无匹配的病例</p>
-          </div>
+          <div className="text-center py-20"><p className="text-[#6B7F96]">暂无匹配的病例</p></div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCases.map((c) => (
               <div
-                key={c.id}
-                role="link"
-                tabIndex={0}
+                key={c.id} role="link" tabIndex={0}
                 onClick={() => {
                   if (!loggedIn) {
                     alert("请先登录或注册，即可免费开始学习");
@@ -201,46 +174,26 @@ function CaseList() {
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-3">
-                    <span className={`badge-category ${categoryColors[c.category] || ""}`}>
-                      {c.category}
-                    </span>
-                    <span className={`badge-difficulty ${difficultyColors[c.difficulty] || ""}`}>
-                      {c.difficulty}
-                    </span>
+                    <span className={`badge-category ${categoryColors[c.category] || ""}`}>{c.category}</span>
+                    <span className={`badge-difficulty ${difficultyColors[c.difficulty] || ""}`}>{c.difficulty}</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-ep-primary transition-colors">
+                  <h3 className="text-lg font-semibold text-[#1A2332] mb-2 font-serif group-hover:text-[#1B4F8A] transition-colors">
                     {c.title}
                   </h3>
-                  <p
-                    className="text-sm text-ep-muted mb-3"
-                    style={{
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                    }}
-                  >
+                  <p className="text-sm text-[#6B7F96] mb-3" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                     {c.description}
                   </p>
                   <div className="flex flex-wrap gap-1.5 mb-3">
                     {c.key_points?.slice(0, 3).map((kp, i) => (
-                      <span key={i} className="text-xs px-2 py-0.5 rounded bg-slate-800 text-ep-muted">
-                        {kp}
-                      </span>
+                      <span key={i} className="text-xs px-2 py-0.5 rounded bg-[#F5F8FC] text-[#6B7F96]">{kp}</span>
                     ))}
                   </div>
-                  <div className="flex items-center justify-between text-xs text-ep-muted mb-4">
-                    <span className="flex items-center gap-1">
-                      <span>⏱</span>
-                      <span>{studyTime[c.difficulty] || "15 分钟"}</span>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span>👥</span>
-                      <span>128 人已学习</span>
-                    </span>
+                  <div className="flex items-center justify-between text-xs text-[#8FA0B4] mb-4">
+                    <span className="flex items-center gap-1"><span>⏱</span><span>{studyTime[c.difficulty] || "15 分钟"}</span></span>
+                    <span className="flex items-center gap-1"><span>👥</span><span>128 人已学习</span></span>
                   </div>
                 </div>
-                <span className="block w-full text-center py-2.5 rounded-[10px] text-white text-sm font-medium bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] group-hover:brightness-110 group-hover:scale-[1.02] transition-all duration-200">
+                <span className="block w-full text-center py-2.5 rounded-[10px] text-white text-sm font-medium bg-[#1B4F8A] group-hover:bg-[#154070] transition-all duration-200">
                   开始学习 →
                 </span>
               </div>
@@ -254,7 +207,7 @@ function CaseList() {
 
 export default function CasesPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-ep-bg"><p className="text-ep-muted">加载中...</p></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-[#F5F8FC]"><p className="text-[#6B7F96]">加载中...</p></div>}>
       <CaseList />
     </Suspense>
   );
