@@ -2,26 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: #e2e8f0;
+  background: #0a0e1a;
+  font-family: var(--font-noto-sans-sc), sans-serif;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0e1a;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-ep-primary hover:bg-indigo-600 text-white font-medium py-2 px-6 rounded-lg transition-colors duration-200;
+  }
+  .btn-secondary {
+    @apply bg-ep-secondary hover:bg-purple-600 text-white font-medium py-2 px-6 rounded-lg transition-colors duration-200;
+  }
+  .card {
+    @apply bg-ep-card border border-slate-700/50 rounded-xl p-6 hover:border-slate-600/50 transition-colors duration-200;
+  }
+  .badge-category {
+    @apply text-xs font-semibold px-2.5 py-0.5 rounded-full;
+  }
+  .badge-difficulty {
+    @apply text-xs font-semibold px-2.5 py-0.5 rounded-full;
   }
 }
