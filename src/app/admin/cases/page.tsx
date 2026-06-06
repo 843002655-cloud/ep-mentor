@@ -36,7 +36,7 @@ export default function AdminCasesPage() {
   return (
     <AppLayout>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex items-center justify-between mb-8"><div><h1 className="text-3xl font-bold text-[#1A2332] mb-2 font-serif">病例管理</h1><p className="text-[#6B7F96]">增删改查病例</p></div><button onClick={handleNew} className="btn-secondary">+ 新建病例</button></div>
+        <div className="flex items-center justify-between mb-8"><div><h1 className="text-3xl font-bold text-[#1A2332] mb-2 font-serif">病例管理</h1><p className="text-[#6B7F96]">增删改查病例</p></div><div className="flex items-center gap-2"><a href="/admin/generate" className="btn-primary text-sm">🤖 AI 生成</a><button onClick={handleNew} className="btn-secondary">+ 新建病例</button></div></div>
         {(isNew || editingId) && (
           <div className="card mb-8 border border-[#1B4F8A]/30">
             <h2 className="text-xl font-semibold text-[#1A2332] mb-4">{isNew ? "新建病例" : "编辑病例"}</h2>
