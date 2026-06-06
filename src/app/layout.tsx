@@ -38,6 +38,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
+      <head>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" async />
+      </head>
       <body className={`${notoSansSC.variable} ${notoSerifSC.variable} antialiased`}>
         {children}
       </body>

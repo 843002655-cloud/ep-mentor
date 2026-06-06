@@ -49,10 +49,29 @@ export default function AdminGeneratePage() {
   const handlePdfUpload = async () => {
     if (!pdfFile) return; setPdfUploading(true); setPdfError(""); setPdfResult("");
     try {
-      const form = new FormData(); form.append("file", pdfFile);
-      const res = await fetch("/api/upload-pdf", { method: "POST", body: form });
+      // Step 1: Parse PDF in browser using PDF.js (CDN)
+      const arrayBuffer = await pdfFile.arrayBuffer();
+      const pdfjsLib = (window as unknown as Record<string, { getDocument: (d: { data: Uint8Array }) => { promise: Promise<{ numPages: number; getPage: (n: number) => Promise<{ getTextContent: () => Promise<{ items: { str: string }[] }> }> }> } }>).pdfjsLib;
+      if (!pdfjsLib) throw new Error("PDF.js 未加载，请刷新页面重试");
+
+      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+      let text = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map((item) => item.str).join(" ") + "\n";
+      }
+
+      if (!text.trim()) throw new Error("PDF 无可提取文字（可能为扫描件）");
+
+      // Step 2: Send text to server for AI extraction
+      const res = await fetch("/api/upload-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text.slice(0, 10000) }),
+      });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "解析失败");
+      if (!res.ok) throw new Error(data.error || "提取失败");
       setPdfResult(JSON.stringify(data.case, null, 2));
     } catch (err: unknown) { setPdfError((err as Error).message); }
     finally { setPdfUploading(false); }
