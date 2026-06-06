@@ -47,6 +47,12 @@ const difficultyColors: Record<string, string> = {
   "高级": "bg-diff-advanced/20 text-diff-advanced",
 };
 
+const studyTime: Record<string, string> = {
+  "基础": "15 分钟",
+  "进阶": "25 分钟",
+  "高级": "40 分钟",
+};
+
 function CaseList() {
   const searchParams = useSearchParams();
   const [cases, setCases] = useState<Case[]>([]);
@@ -119,28 +125,37 @@ function CaseList() {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {cases.map((c) => (
-              <Link key={c.id} href={`/cases/${c.id}`} className="card group">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className={`badge-category ${categoryColors[c.category] || ""}`}>
-                    {c.category}
-                  </span>
-                  <span className={`badge-difficulty ${difficultyColors[c.difficulty] || ""}`}>
-                    {c.difficulty}
-                  </span>
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-ep-primary transition-colors">
-                  {c.title}
-                </h3>
-                <p className="text-sm text-ep-muted line-clamp-2 mb-4">
-                  {c.description}
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {c.key_points?.slice(0, 3).map((kp, i) => (
-                    <span key={i} className="text-xs px-2 py-0.5 rounded bg-slate-800 text-ep-muted">
-                      {kp}
+              <Link key={c.id} href={`/cases/${c.id}`} className="card group flex flex-col">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className={`badge-category ${categoryColors[c.category] || ""}`}>
+                      {c.category}
                     </span>
-                  ))}
+                    <span className={`badge-difficulty ${difficultyColors[c.difficulty] || ""}`}>
+                      {c.difficulty}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-ep-primary transition-colors">
+                    {c.title}
+                  </h3>
+                  <p className="text-sm text-ep-muted line-clamp-2 mb-3">
+                    {c.description}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {c.key_points?.slice(0, 3).map((kp, i) => (
+                      <span key={i} className="text-xs px-2 py-0.5 rounded bg-slate-800 text-ep-muted">
+                        {kp}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-xs text-ep-muted flex items-center gap-1 mb-4">
+                    <span>⏱</span>
+                    <span>预计学习：{studyTime[c.difficulty] || "15 分钟"}</span>
+                  </p>
                 </div>
+                <span className="block w-full text-center py-2.5 rounded-[10px] text-white text-sm font-medium bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] group-hover:brightness-110 group-hover:scale-[1.02] transition-all duration-200">
+                  开始学习 →
+                </span>
               </Link>
             ))}
           </div>
