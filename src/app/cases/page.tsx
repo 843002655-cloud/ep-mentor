@@ -143,11 +143,11 @@ function CaseList() {
         </p>
 
         {!loggedIn && (
-          <div className="mb-8 px-4 py-3 rounded-xl border border-[#6366f1]/30 flex items-center justify-between" style={{ background: "rgba(99,102,241,0.08)" }}>
+          <div className="mb-8 px-4 py-3 rounded-xl border border-[#6366f1]/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" style={{ background: "rgba(99,102,241,0.08)" }}>
             <span className="text-sm text-white">
               🎓 免费注册即可与 AI 导师对话，开始学习
             </span>
-            <a href="/auth?register=1" className="text-sm font-medium text-[#a5b4fc] hover:text-white transition-colors ml-4 whitespace-nowrap">
+            <a href="/auth?register=1" className="text-sm font-medium text-[#a5b4fc] hover:text-white transition-colors whitespace-nowrap self-end sm:self-auto">
               立即注册 →
             </a>
           </div>

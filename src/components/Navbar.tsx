@@ -65,7 +65,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <span className="text-2xl">⚡</span>
-            <span className="text-lg font-bold text-white">
+            <span className="text-lg font-bold text-white hidden sm:inline">
               EP <span className="text-ep-primary">Mentor</span>
             </span>
           </Link>
@@ -133,13 +133,13 @@ export default function Navbar() {
               <div className="flex items-center gap-2">
                 <Link
                   href="/auth"
-                  className="text-sm py-1.5 px-4 border border-white/30 text-white rounded-lg hover:border-white/50 transition-colors"
+                  className="text-xs sm:text-sm py-1.5 px-2.5 sm:px-4 border border-white/30 text-white rounded-lg hover:border-white/50 transition-colors whitespace-nowrap"
                 >
                   登录
                 </Link>
                 <Link
                   href="/auth?register=1"
-                  className="text-sm py-1.5 px-4 rounded-lg text-white font-medium bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] hover:brightness-110 transition-all"
+                  className="text-xs sm:text-sm py-1.5 px-2.5 sm:px-4 rounded-lg text-white font-medium bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] hover:brightness-110 transition-all whitespace-nowrap"
                 >
                   免费注册
                 </Link>
