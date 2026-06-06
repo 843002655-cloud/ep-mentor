@@ -11,6 +11,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 const mainLinks = [
   { href: ROUTES.CASES, label: "病例库" },
   { href: ROUTES.QUIZ, label: "知识测验" },
+  { href: "/tools", label: "EP 工具" },
   { href: ROUTES.LIBRARY, label: "资料库" },
 ];
 
