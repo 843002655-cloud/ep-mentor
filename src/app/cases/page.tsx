@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
+import { getSupabase } from "@/lib/supabase";
 
 interface Case {
   id: string;
@@ -55,10 +55,18 @@ const studyTime: Record<string, string> = {
 
 function CaseList() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState(searchParams.get("category") || "");
   const [difficulty, setDifficulty] = useState("");
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    getSupabase().auth.getUser().then(({ data: { user } }) => {
+      setLoggedIn(!!user);
+    });
+  }, []);
 
   useEffect(() => {
     const fetchCases = async () => {
@@ -79,9 +87,20 @@ function CaseList() {
     <AppLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h1 className="text-3xl font-bold text-white mb-2">病例库</h1>
-        <p className="text-ep-muted mb-8">
+        <p className="text-ep-muted mb-4">
           浏览经典心脏电生理教学案例，与 AI 导师互动学习
         </p>
+
+        {!loggedIn && (
+          <div className="mb-8 px-4 py-3 rounded-xl border border-[#6366f1]/30 flex items-center justify-between" style={{ background: "rgba(99,102,241,0.08)" }}>
+            <span className="text-sm text-white">
+              🎓 免费注册即可与 AI 导师对话，开始学习
+            </span>
+            <a href="/auth?register=1" className="text-sm font-medium text-[#a5b4fc] hover:text-white transition-colors ml-4 whitespace-nowrap">
+              立即注册 →
+            </a>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-3 mb-8">
           {categories.map((c) => (
@@ -125,7 +144,21 @@ function CaseList() {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {cases.map((c) => (
-              <Link key={c.id} href={`/cases/${c.id}`} className="card group flex flex-col">
+              <div
+                key={c.id}
+                role="link"
+                tabIndex={0}
+                onClick={() => {
+                  if (!loggedIn) {
+                    alert("请先登录或注册，即可免费开始学习");
+                    router.push("/auth?register=1&redirect=" + encodeURIComponent("/cases/" + c.id));
+                  } else {
+                    router.push("/cases/" + c.id);
+                  }
+                }}
+                onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.click(); }}
+                className="card group flex flex-col cursor-pointer"
+              >
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-3">
                     <span className={`badge-category ${categoryColors[c.category] || ""}`}>
@@ -156,7 +189,7 @@ function CaseList() {
                 <span className="block w-full text-center py-2.5 rounded-[10px] text-white text-sm font-medium bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] group-hover:brightness-110 group-hover:scale-[1.02] transition-all duration-200">
                   开始学习 →
                 </span>
-              </Link>
+              </div>
             ))}
           </div>
         )}

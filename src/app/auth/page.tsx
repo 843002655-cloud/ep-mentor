@@ -8,10 +8,10 @@ import AppLayout from "@/components/AppLayout";
 function AuthForm() {
   const [email, setEmail] = useState("843002655@qq.com");
   const [password, setPassword] = useState("");
-  const [isRegister, setIsRegister] = useState(false);
+  const searchParams = useSearchParams();
+  const [isRegister, setIsRegister] = useState(searchParams.get("register") === "1");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/cases";
 
   const handleAuth = async (e: React.FormEvent) => {

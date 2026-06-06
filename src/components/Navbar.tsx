@@ -102,9 +102,20 @@ export default function Navbar() {
                 </button>
               </div>
             ) : (
-              <Link href="/auth" className="btn-primary text-sm py-1.5 px-4">
-                登录
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/auth"
+                  className="text-sm py-1.5 px-4 border border-white/30 text-white rounded-lg hover:border-white/50 transition-colors"
+                >
+                  登录
+                </Link>
+                <Link
+                  href="/auth?register=1"
+                  className="text-sm py-1.5 px-4 rounded-lg text-white font-medium bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] hover:brightness-110 transition-all"
+                >
+                  免费注册
+                </Link>
+              </div>
             )}
           </div>
         </div>
