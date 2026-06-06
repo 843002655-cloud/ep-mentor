@@ -73,11 +73,18 @@ export const authService = {
     }
   },
 
-  /** 邮箱注册 */
-  async register(email: string, password: string) {
+  /** 邮箱注册（可附带身份/兴趣元数据） */
+  async register(
+    email: string,
+    password: string,
+    metadata?: Record<string, string>
+  ) {
     const { data, error } = await getSupabase().auth.signUp({
       email,
       password,
+      options: {
+        data: metadata,
+      },
     });
     if (error) throw error;
     return data;

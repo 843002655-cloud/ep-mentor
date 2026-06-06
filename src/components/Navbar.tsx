@@ -14,6 +14,7 @@ const mainLinks = [
 ];
 
 const dropdownItems = [
+  { href: "/profile", label: "个人中心", icon: "👤" },
   { href: ROUTES.DASHBOARD, label: "学习进度", icon: "📊" },
   { href: ROUTES.SUBMIT, label: "投稿案例", icon: "📝" },
   { href: ROUTES.ADMIN, label: "管理后台", icon: "⚙️", admin: true },
