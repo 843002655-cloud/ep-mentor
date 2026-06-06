@@ -81,7 +81,7 @@ export default function AdminGeneratePage() {
     setPdfSaving(true);
     try {
       const c = JSON.parse(pdfResult);
-      await caseService.createCase({ ...c, is_published: false } as Parameters<typeof caseService.createCase>[0]);
+      await caseService.createCase({ ...c, is_published: false } as never);
       setPdfResult(""); setPdfFile(null);
       if (fileRef.current) fileRef.current.value = "";
       alert("病例已保存到数据库！");
