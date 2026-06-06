@@ -24,7 +24,11 @@ function AuthForm() {
         if (data.user?.identities?.length === 0) { setMessage("该邮箱已注册，请直接登录"); }
         else { navigateTo(redirect); }
       } else {
-        const data = await authService.login(email, password);
+        const data = await authService.login("email", { email, password });
+        if (!data || "error" in data) {
+          setMessage("登录失败");
+          return;
+        }
         if (data.session) { replaceTo(redirect); return; }
         setMessage("登录失败：未获取到会话");
       }
