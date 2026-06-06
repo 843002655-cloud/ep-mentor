@@ -85,12 +85,13 @@ function CaseList() {
             <a href={ROUTES.AUTH_REGISTER} className="text-sm font-medium text-[#1B4F8A] hover:text-[#154070] transition-colors whitespace-nowrap self-end sm:self-auto">立即注册 →</a>
           </div>
         )}
-        <div className="flex flex-wrap gap-3 mb-8 items-center">
+        {/* 筛选器 — 移动端横向滚动，桌面端换行 */}
+        <div className="filter-bar sm:flex-wrap sm:overflow-visible mb-8 items-center">
           {categories.map((c) => <FilterBtn key={c.value} active={category===c.value} onClick={()=>setCategory(c.value)}>{c.label}</FilterBtn>)}
-          <div className="w-px bg-[#E8ECF0] mx-2 h-6" />
+          <div className="w-px bg-[#E8ECF0] mx-1 sm:mx-2 h-6 shrink-0 hidden sm:block" />
           {difficulties.map((d) => <FilterBtn key={d.value} active={difficulty===d.value} onClick={()=>setDifficulty(d.value)}>{d.label}</FilterBtn>)}
-          <div className="w-px bg-[#E8ECF0] mx-2 h-6" />
-          <span className="text-xs text-[#8FA0B4] mr-1">QRS</span>
+          <div className="w-px bg-[#E8ECF0] mx-1 sm:mx-2 h-6 shrink-0 hidden sm:block" />
+          <span className="text-xs text-[#8FA0B4] mr-1 shrink-0 flex items-center">QRS</span>
           {qrsTypes.map((q) => <FilterBtn key={q.value} active={qrsType===q.value} onClick={()=>setQrsType(q.value)}>{q.label}</FilterBtn>)}
         </div>
         {loading ? <div className="text-center py-20 text-[#6B7F96]">加载中...</div>

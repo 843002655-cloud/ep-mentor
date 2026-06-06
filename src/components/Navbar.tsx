@@ -41,7 +41,7 @@ export default function Navbar() {
   const avatarLetter = user?.email?.[0]?.toUpperCase() || "?";
 
   return (
-    <nav className="border-b border-[#E8ECF0] bg-white backdrop-blur-sm sticky top-0 z-50">
+    <nav className="border-b border-[#E8ECF0] bg-white sticky top-0 z-50" style={{ borderBottomWidth: 0.5 }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2 shrink-0">

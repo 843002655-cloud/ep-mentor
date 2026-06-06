@@ -2,27 +2,89 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── 移动端基础适配 ────────────────────────────────────────────── */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   color: #3D5166;
   background: #F5F8FC;
   font-family: var(--font-noto-sans-sc), sans-serif;
 }
 
-/* Custom scrollbar */
+/* 安全区域适配（刘海屏 / 底部 Home 条） */
+.page-container {
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-top: env(safe-area-inset-top);
+}
+
+/* ── 触摸交互 ──────────────────────────────────────────────────── */
+
+/* 所有可点击元素最小触摸区域 44x44px */
+button, a, .clickable {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* 移动端点击高亮去除 */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── 滚动条 ────────────────────────────────────────────────────── */
+
+/* 桌面端滚动条 */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: #F5F8FC; }
 ::-webkit-scrollbar-thumb { background: #C5D3E0; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #8FA0B4; }
 
+/* ── 筛选器横向滚动 ────────────────────────────────────────────── */
+
+.filter-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 8px;
+  padding: 0 4px 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.filter-bar::-webkit-scrollbar {
+  display: none;
+}
+.filter-bar > * {
+  flex-shrink: 0;
+}
+
+/* ── 底部导航栏 ─────────────────────────────────────────────────── */
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: #fff;
+  border-top: 0.5px solid #E8ECF0;
+  z-index: 40;
+}
+
+/* ── 组件样式 ──────────────────────────────────────────────────── */
+
 @layer components {
   .btn-primary {
-    @apply bg-[#1B4F8A] hover:bg-[#154070] text-white font-medium py-2 px-6 rounded-lg transition-colors duration-200;
+    @apply bg-[#1B4F8A] hover:bg-[#154070] text-white font-medium py-2.5 px-6 rounded-lg transition-colors duration-200;
   }
   .btn-secondary {
-    @apply bg-white border border-[#C5D3E0] text-[#4B6080] font-medium py-2 px-6 rounded-lg hover:bg-gray-50 transition-colors duration-200;
+    @apply bg-white border border-[#C5D3E0] text-[#4B6080] font-medium py-2.5 px-6 rounded-lg hover:bg-gray-50 transition-colors duration-200;
   }
   .card {
-    @apply bg-white border border-[#DDE5EE] rounded-xl p-6 hover:border-[#C5D3E0] transition-colors duration-200 shadow-sm;
+    @apply bg-white border border-[#DDE5EE] rounded-xl p-4 sm:p-6 hover:border-[#C5D3E0] transition-colors duration-200 shadow-sm;
   }
   .badge-category {
     @apply text-xs font-semibold px-2.5 py-0.5 rounded-full;
