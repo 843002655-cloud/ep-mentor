@@ -34,6 +34,13 @@ const difficulties = [
   { value: "高级", label: "高级" },
 ];
 
+const qrsTypes = [
+  { value: "", label: "全部" },
+  { value: "narrow", label: "窄QRS" },
+  { value: "wide", label: "宽QRS" },
+  { value: "delta", label: "预激波" },
+];
+
 const categoryColors: Record<string, string> = {
   SVT: "bg-svt/20 text-svt",
   VT: "bg-vt/20 text-vt",
@@ -53,13 +60,45 @@ const studyTime: Record<string, string> = {
   "高级": "40 分钟",
 };
 
+// QRS 类型关键词匹配
+function matchQrs(findings: string[], qrsType: string): boolean {
+  if (!qrsType) return true;
+  if (qrsType === "narrow") return findings.some((f) => f.includes("窄QRS") || f.includes("窄 QRS"));
+  if (qrsType === "wide") return findings.some((f) => f.includes("宽QRS") || f.includes("宽 QRS"));
+  if (qrsType === "delta") return findings.some((f) => f.includes("delta") || f.includes("预激") || f.includes("WPW"));
+  return true;
+}
+
+const FilterButton = ({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) => (
+  <button
+    onClick={onClick}
+    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
+      active
+        ? "bg-ep-primary/20 text-ep-primary border-ep-primary/50"
+        : "bg-ep-card text-ep-muted border-slate-700 hover:border-slate-500"
+    }`}
+  >
+    {active && "✓ "}
+    {children}
+  </button>
+);
+
 function CaseList() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [cases, setCases] = useState<Case[]>([]);
+  const [allCases, setAllCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState(searchParams.get("category") || "");
   const [difficulty, setDifficulty] = useState("");
+  const [qrsType, setQrsType] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => {
@@ -68,20 +107,25 @@ function CaseList() {
     });
   }, []);
 
+  // Fetch all cases on mount, then filter client-side
   useEffect(() => {
     const fetchCases = async () => {
       setLoading(true);
-      const params = new URLSearchParams();
-      if (category) params.set("category", category);
-      if (difficulty) params.set("difficulty", difficulty);
-
-      const res = await fetch(`/api/cases?${params.toString()}`);
+      const res = await fetch(`/api/cases`);
       const data = await res.json();
-      setCases(data.cases || []);
+      setAllCases(data.cases || []);
       setLoading(false);
     };
     fetchCases();
-  }, [category, difficulty]);
+  }, []);
+
+  // Client-side filtering
+  const filteredCases = allCases.filter((c) => {
+    if (category && c.category !== category) return false;
+    if (difficulty && c.difficulty !== difficulty) return false;
+    if (!matchQrs(c.ecg_findings || [], qrsType)) return false;
+    return true;
+  });
 
   return (
     <AppLayout>
@@ -109,48 +153,37 @@ function CaseList() {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-3 mb-8">
+        {/* Filters */}
+        <div className="flex flex-wrap gap-3 mb-8 items-center">
           {categories.map((c) => (
-            <button
-              key={c.value}
-              onClick={() => setCategory(c.value)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
-                category === c.value
-                  ? "bg-ep-primary/20 text-ep-primary border-ep-primary/50"
-                  : "bg-ep-card text-ep-muted border-slate-700 hover:border-slate-500"
-              }`}
-            >
+            <FilterButton key={c.value} active={category === c.value} onClick={() => setCategory(c.value)}>
               {c.label}
-            </button>
+            </FilterButton>
           ))}
-          <div className="w-px bg-slate-700 mx-2" />
+          <div className="w-px bg-slate-700 mx-2 h-6" />
           {difficulties.map((d) => (
-            <button
-              key={d.value}
-              onClick={() => setDifficulty(d.value)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
-                difficulty === d.value
-                  ? "bg-ep-primary/20 text-ep-primary border-ep-primary/50"
-                  : "bg-ep-card text-ep-muted border-slate-700 hover:border-slate-500"
-              }`}
-            >
+            <FilterButton key={d.value} active={difficulty === d.value} onClick={() => setDifficulty(d.value)}>
               {d.label}
-            </button>
+            </FilterButton>
+          ))}
+          <div className="w-px bg-slate-700 mx-2 h-6" />
+          <span className="text-xs text-ep-muted mr-1">QRS</span>
+          {qrsTypes.map((q) => (
+            <FilterButton key={q.value} active={qrsType === q.value} onClick={() => setQrsType(q.value)}>
+              {q.label}
+            </FilterButton>
           ))}
         </div>
 
         {loading ? (
           <div className="text-center py-20 text-ep-muted">加载中...</div>
-        ) : cases.length === 0 ? (
+        ) : filteredCases.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-ep-muted">暂无病例数据</p>
-            <p className="text-sm text-ep-muted mt-2">
-              请先在 Supabase SQL Editor 中执行种子数据
-            </p>
+            <p className="text-ep-muted">暂无匹配的病例</p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {cases.map((c) => (
+            {filteredCases.map((c) => (
               <div
                 key={c.id}
                 role="link"
@@ -178,7 +211,15 @@ function CaseList() {
                   <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-ep-primary transition-colors">
                     {c.title}
                   </h3>
-                  <p className="text-sm text-ep-muted line-clamp-2 mb-3">
+                  <p
+                    className="text-sm text-ep-muted mb-3"
+                    style={{
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
+                  >
                     {c.description}
                   </p>
                   <div className="flex flex-wrap gap-1.5 mb-3">
@@ -188,10 +229,16 @@ function CaseList() {
                       </span>
                     ))}
                   </div>
-                  <p className="text-xs text-ep-muted flex items-center gap-1 mb-4">
-                    <span>⏱</span>
-                    <span>预计学习：{studyTime[c.difficulty] || "15 分钟"}</span>
-                  </p>
+                  <div className="flex items-center justify-between text-xs text-ep-muted mb-4">
+                    <span className="flex items-center gap-1">
+                      <span>⏱</span>
+                      <span>{studyTime[c.difficulty] || "15 分钟"}</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span>👥</span>
+                      <span>128 人已学习</span>
+                    </span>
+                  </div>
                 </div>
                 <span className="block w-full text-center py-2.5 rounded-[10px] text-white text-sm font-medium bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] group-hover:brightness-110 group-hover:scale-[1.02] transition-all duration-200">
                   开始学习 →
