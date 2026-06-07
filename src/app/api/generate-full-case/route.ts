@@ -9,16 +9,18 @@ const MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
 
 function buildPrompt(category: string, difficulty: string, imageCount: number, hasVideo: boolean): string {
   const videoHint = hasVideo ? '\n- Video reference available: include video_url if relevant' : '';
-  return `# ⚠️ CRITICAL RULE: ONLY EXTRACT, NEVER INVENT ⚠️
-你是一个文献内容提取器，不是内容生成器。
+  return `# ⚠️ 你是文献内容提取器，严格从原文提取，不编造 ⚠️
 
-# STRICT RULES — VIOLATIONS WILL BE REJECTED
-1. **每个字都必须来自提供的PDF文献原文**。禁止编造任何数据、患者信息、测量值、诊断、知识点。
-2. 如果文献中没有提到年龄/性别，patient 里就不要填。不要猜测。
-3. 如果文献中没有提到某个测量值，details 里就不要写具体数字。
-4. **图片匹配规则**：当前有 ${imageCount} 张图片，按顺序对应文献中的图1、图2...图${imageCount}。请在文献原文中查找"图1""Fig 1""Figure 1"等标注，提取该图的标题和描述作为 figures[0]，以此类推。如果文献中找不到某张图的描述，figures 中注明"文献未提供描述"。
-5. key_points 必须直接从文献原文中提取，不能自行总结。
-6. question 必须基于文献中该图/该阶段的原文内容提出。
+# RULES
+1. **从原文提取所有信息**。搜索原文中的患者信息（年龄/性别/主诉/病史）、ECG测量值、诊断结论。
+2. **关键：图片描述提取** — 原文中有 ${imageCount} 张图片对应的描述。请仔细搜索原文中以下模式：
+   - "图1" "图 1" "Fig. 1" "Figure 1"
+   - "图2" "图 2" "Fig. 2" "Figure 2" (以此类推到图${imageCount})
+   找到后，将原文中紧跟在图号后面的**完整段落**填入对应 figures[].description。
+   **图注通常在原文中是独立段落，包含"如图所示""见图X""Figure X shows"等引导词。请仔细查找。**
+3. 如果确实找不到某图描述，填原文中与该图最相关的内容段落。
+4. key_points 从原文提取。question 基于原文内容撰写。
+5. 数据缺失时填空字符串，不要编造。
 
 # Task
 从下方【PDF 文献原文】中提取内容，填入 JSON 结构。缺失的信息留空字符串 ""，不要编造。
