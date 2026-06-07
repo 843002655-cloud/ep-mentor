@@ -59,13 +59,25 @@ export default function CaseDetailPage() {
           }));
         }
       }
+      // Fallback: if no figures, create steps from ecg_findings
+      if (extracted.length === 0 && (c.ecg_findings?.length || 0) > 0) {
+        (c.ecg_findings || []).forEach((finding, i) => {
+          extracted.push({
+            figure_number: `步骤 ${i + 1}`,
+            title: `心电图发现 ${i + 1}`,
+            description: finding,
+            teaching_points: "请仔细观察这个发现，思考其诊断意义",
+            key_question: `从这个发现中，你能推断出什么？它支持或排除了哪种诊断？`,
+          });
+        });
+      }
       setFigures(extracted);
 
       if (extracted.length > 0) {
         const f = extracted[0];
         setMessages([{
           role: "assistant",
-          content: `欢迎来到电生理导管室。\n\n今天我们一起分析：**${c.title}**\n\n📷 **${f.figure_number}: ${f.title}**\n\n${f.description ? "📖 " + f.description + "\n\n" : ""}🎯 ${f.teaching_points}\n\n${f.key_question}`,
+          content: `欢迎来到电生理导管室。\n\n今天我们一起分析：**${c.title}**\n\n${extracted.length > 0 ? `我们将按步骤分析，共 ${extracted.length} 个关键发现。` : ""}\n\n📷 **${f.figure_number}: ${f.title}**\n\n${f.description ? "📖 " + f.description + "\n\n" : ""}🎯 ${f.teaching_points}\n\n${f.key_question}`,
         }]);
       } else {
         setMessages([{
@@ -228,11 +240,19 @@ export default function CaseDetailPage() {
                   <button onClick={handleSend} disabled={sending||!input.trim()} className="btn-primary self-end text-sm px-4">发送</button>
                 </div>
                 {/* Action buttons */}
-                {figures.length > 1 && figIdx < figures.length - 1 && (
+                {figures.length > 0 && figIdx < figures.length - 1 && (
                   <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[#E8ECF0]">
-                    <span className="text-xs text-[#8FA0B4]">分析完当前图片后：</span>
+                    <span className="text-xs text-[#8FA0B4]">分析完当前步骤后：</span>
                     <button onClick={handleNextFigure} className="text-xs px-3 py-1 bg-[#EBF2FA] text-[#1B4F8A] rounded-lg hover:bg-[#1B4F8A] hover:text-white transition-colors">
-                      下一张图片 →
+                      下一步 →
+                    </button>
+                  </div>
+                )}
+                {figures.length > 0 && figIdx === figures.length - 1 && (
+                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[#E8ECF0]">
+                    <span className="text-xs text-[#8FA0B4]">所有步骤已完成：</span>
+                    <button onClick={handleNextFigure} className="text-xs px-3 py-1 bg-[#E8F4F0] text-[#0F6E56] rounded-lg hover:bg-[#0F6E56] hover:text-white transition-colors">
+                      🎉 查看总结 →
                     </button>
                   </div>
                 )}
