@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: buildPrompt(category, difficulty, imageCount, hasVideo) },
-        { role: "user", content: `【PDF 文献原文 — 以下所有内容均来自用户上传的PDF文献，请严格从中提取，不得编造】\n\n${effectiveText}`.slice(0, 12000) },
+        { role: "user", content: `【PDF 文献原文 — 严格从中提取，不得编造。特别注意查找"图1""图2""Fig"等标注，完整提取每张图的标题和描述段落】\n\n${effectiveText}`.slice(0, 25000) },
       ],
     });
 
