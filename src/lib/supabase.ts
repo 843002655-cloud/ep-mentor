@@ -23,6 +23,7 @@ export interface Case {
   is_published: boolean;
   mapping_system?: string;
   video_url?: string;
+  content_json?: Record<string, unknown>;
   created_at: string;
 }
 

@@ -116,7 +116,7 @@ export default function AdminGeneratePage() {
       await caseService.createCase({ ...c, is_published: false } as never);
       setPdfResult(""); setPdfFile(null);
       if (fileRef.current) fileRef.current.value = "";
-      alert("病例已保存到数据库！");
+      alert("病例已保存！去 /admin/cases 编辑发布");
     } catch { alert("保存失败"); }
     finally { setPdfSaving(false); }
   };
