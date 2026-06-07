@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: buildPrompt(category, difficulty, imageCount, hasVideo) },
-        { role: "user", content: `【PDF 文献原文 — 严格从中提取，不得编造。特别注意查找"图1""图2""Fig"等标注，完整提取每张图的标题和描述段落】\n\n${effectiveText}`.slice(0, 25000) },
+        { role: "user", content: `【PDF 文献原文 — 严格提取。搜索"Figure 1""Figure 2""Fig."等标注，每张图的描述通常是一段完整文字。必须原文照抄到 figures[].description】\n\n${effectiveText}`.slice(0, 60000) },
       ],
     });
 
