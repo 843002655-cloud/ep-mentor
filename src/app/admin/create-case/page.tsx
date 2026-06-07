@@ -87,10 +87,26 @@ export default function CreateCasePage() {
         if (res.ok) {
           const d = await res.json();
           if (d.url) urls.push(d.url as string);
+        } else {
+          console.warn("Upload failed for image", i, await res.text());
         }
-      } catch { /* skip failed */ }
+      } catch(e) { console.warn("Upload error for image", i, e); }
     }
     setImgUploading(false);
+    if (urls.length === 0 && images.length > 0) {
+      // Fallback: convert to base64 and send directly
+      setMsg("⚠️ 图片上传失败，使用 base64 备用方案...");
+      const base64Urls: string[] = [];
+      for (const img of images) {
+        const dataUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(img.file);
+        });
+        base64Urls.push(dataUrl);
+      }
+      return base64Urls;
+    }
     return urls;
   };
 
