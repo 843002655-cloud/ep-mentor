@@ -30,19 +30,21 @@ export default function AdminGeneratePage() {
     catch (err: unknown) { setResult("生成失败：" + (err as Error).message); }
     finally { setGenerating(false); }
   };
-  const flattenCase = (c: Record<string, unknown>) => ({
-    title: (c.title as string) || "未命名",
-    category: (c.category as string) || category,
-    difficulty: (c.difficulty as string) || difficulty,
-    description: (c.description as string) || (c.patient as Record<string, string>)?.history || "",
-    ecg_findings: (c.ecg_findings as { details?: string[] })?.details || (c.ecg_findings as string[]) || [],
-    question: (c.question as string) || "",
-    hint: (c.hint as string) || "",
-    key_points: (c.key_points as string[]) || [],
-    is_published: false,
-    mapping_system: (c.mapping_system as string) || "",
-    content_json: c,
-  });
+  const flattenCase = (c: Record<string, unknown>) => {
+    const ecg = c.ecg_findings as Record<string, unknown> | undefined;
+    return {
+      title: (c.title as string) || "未命名",
+      category: (c.category as string) || category,
+      difficulty: (c.difficulty as string) || difficulty,
+      description: (c.description as string) || (c.patient as Record<string, string>)?.history || "",
+      ecg_findings: (ecg?.details as string[]) || (c.ecg_findings as string[]) || [],
+      question: (c.question as string) || "",
+      hint: (c.hint as string) || "",
+      key_points: (c.key_points as string[]) || [],
+      is_published: false,
+      mapping_system: (c.mapping_system as string) || "",
+    };
+  };
 
   const handleSave = async () => {
     if (!result) return;
@@ -55,7 +57,7 @@ export default function AdminGeneratePage() {
       }
       setResult("");
       alert(`成功保存 ${list.length} 个病例！`);
-    } catch { alert("保存失败"); }
+    } catch (e) { alert("保存失败：" + ((e as Error).message || String(e))); }
     finally { setSaving(false); }
   };
 
@@ -130,7 +132,7 @@ export default function AdminGeneratePage() {
       setPdfResult(""); setPdfFile(null);
       if (fileRef.current) fileRef.current.value = "";
       alert("病例已保存！去 /admin/cases 编辑发布");
-    } catch { alert("保存失败"); }
+    } catch (e) { alert("保存失败：" + ((e as Error).message || String(e))); }
     finally { setPdfSaving(false); }
   };
 
