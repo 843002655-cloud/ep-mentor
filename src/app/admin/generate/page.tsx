@@ -30,18 +30,31 @@ export default function AdminGeneratePage() {
     catch (err: unknown) { setResult("生成失败：" + (err as Error).message); }
     finally { setGenerating(false); }
   };
+  const flattenCase = (c: Record<string, unknown>) => ({
+    title: (c.title as string) || "未命名",
+    category: (c.category as string) || category,
+    difficulty: (c.difficulty as string) || difficulty,
+    description: (c.description as string) || (c.patient as Record<string, string>)?.history || "",
+    ecg_findings: (c.ecg_findings as { details?: string[] })?.details || (c.ecg_findings as string[]) || [],
+    question: (c.question as string) || "",
+    hint: (c.hint as string) || "",
+    key_points: (c.key_points as string[]) || [],
+    is_published: false,
+    mapping_system: (c.mapping_system as string) || "",
+    content_json: c,
+  });
+
   const handleSave = async () => {
     if (!result) return;
     setSaving(true);
     try {
-      const cases = JSON.parse(result);
-      if (Array.isArray(cases)) {
-        for (const c of cases) {
-          await caseService.createCase({ ...c, category, difficulty, is_published: false } as Parameters<typeof caseService.createCase>[0]);
-        }
+      const parsed = JSON.parse(result);
+      const list = Array.isArray(parsed) ? parsed : [parsed];
+      for (const c of list) {
+        await caseService.createCase(flattenCase(c as Record<string, unknown>) as never);
       }
       setResult("");
-      alert(`成功保存 ${cases.length} 个病例！`);
+      alert(`成功保存 ${list.length} 个病例！`);
     } catch { alert("保存失败"); }
     finally { setSaving(false); }
   };
@@ -112,8 +125,8 @@ export default function AdminGeneratePage() {
     if (!pdfResult) return;
     setPdfSaving(true);
     try {
-      const c = JSON.parse(pdfResult);
-      await caseService.createCase({ ...c, is_published: false } as never);
+      const c = JSON.parse(pdfResult) as Record<string, unknown>;
+      await caseService.createCase(flattenCase(c) as never);
       setPdfResult(""); setPdfFile(null);
       if (fileRef.current) fileRef.current.value = "";
       alert("病例已保存！去 /admin/cases 编辑发布");
