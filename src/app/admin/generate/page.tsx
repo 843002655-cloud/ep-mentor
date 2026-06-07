@@ -82,33 +82,34 @@ export default function AdminGeneratePage() {
         // Render page to image (first 10 pages max)
         if (i <= 10) {
           try {
-            const viewport = page.getViewport({ scale: 1.5 });
+            const scale = 1.0;
+            const viewport = page.getViewport({ scale });
             const canvas = document.createElement("canvas");
             canvas.width = viewport.width;
             canvas.height = viewport.height;
             const ctx = canvas.getContext("2d");
-            if (ctx) {
-              await page.render({ canvasContext: ctx, viewport });
-              const blob = await new Promise<Blob>((resolve) =>
-                canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.8)
-              );
-              // Upload via admin API (bypasses RLS)
-              const uploadForm = new FormData();
-              const file = new File([blob], `pdf-p${i}.jpg`, { type: "image/jpeg" });
-              uploadForm.append("file", file);
-              const uploadRes = await fetch("/api/upload-image", {
-                method: "POST",
-                body: uploadForm,
-              });
-              if (uploadRes.ok) {
-                const uploadData = await uploadRes.json();
-                if (uploadData.url) imageUrls.push(uploadData.url);
-              } else {
-                const errText = await uploadRes.text();
-                console.warn("Image upload failed:", errText.slice(0, 200));
-              }
+            if (!ctx) { console.warn("No 2d context for page", i); continue; }
+            await page.render({ canvasContext: ctx, viewport });
+            const blob = await new Promise<Blob>((resolve, reject) => {
+              canvas.toBlob((b) => {
+                if (b && b.size > 0) resolve(b);
+                else reject(new Error("Empty blob"));
+              }, "image/jpeg", 0.7);
+            });
+            console.log(`Page ${i}: blob size=${blob.size}, type=${blob.type}`);
+            const uploadForm = new FormData();
+            const file = new File([blob], `pdf-p${i}.jpg`, { type: "image/jpeg" });
+            uploadForm.append("file", file);
+            const uploadRes = await fetch("/api/upload-image", {
+              method: "POST",
+              body: uploadForm,
+            });
+            const uploadData = await uploadRes.json();
+            console.log(`Page ${i} upload:`, uploadRes.status, uploadData);
+            if (uploadRes.ok && uploadData.url) {
+              imageUrls.push(uploadData.url);
             }
-          } catch(e) { console.warn("Page render failed:", e); }
+          } catch(e) { console.error("Page render/upload failed for page", i, e); }
         }
       }
 
