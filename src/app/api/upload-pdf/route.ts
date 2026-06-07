@@ -8,36 +8,47 @@ const deepseek = new OpenAI({
 
 const MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
 
-const EXTRACT_PROMPT = `# Role
+function buildPrompt(imageUrls: string[]): string {
+  const imageList = imageUrls.length > 0
+    ? `\n\n# Available images (extracted from PDF pages)\n${imageUrls.map((url, i) => `Page ${i + 1}: ${url}`).join("\n")}\n\nSelect the 3-5 most relevant images and include them in image_urls with figure labels.`
+    : "";
+
+  return `# Role
 你是电生理领域的医学编辑，擅长从学术文献中提取教学案例。
 
 # Task
-从以下文献内容中，提取并生成一个**详细的**心脏电生理教学案例。要求充分利用文献中的临床数据和图表信息，构建一个完整的教学路径。
+从以下文献内容中，提取并生成一个**详细的**心脏电生理教学案例。
 
 # Rules
-1. **病例摘要**：从文献中提取真实患者信息（年龄/性别/主诉/既往史/用药），不编造，文献缺信息可省略
-2. **ECG/EPS发现**：从文献中提取所有可以教学的心电图特征（至少4条），优先使用文献中描述的实际测量值和波形特征
-3. **分步教学**：设计3-4个逐层递进的教学问题，模仿导管室里的思考过程——从体表ECG → 腔内图鉴别 → 消融策略
-4. **关键知识点**：提取4-6个核心知识点，优先用文献本身的教学要点
-5. 医学术语准确，保留必要英文缩写（AVNRT、CTI、PVI等）
+1. **病例摘要**：从文献中提取真实患者信息（年龄/性别/主诉/既往史/用药）
+2. **ECG/EPS发现**：提取所有可用于教学的心电图特征（至少4条）
+3. **分步教学**：设计3-4个逐层递进的教学问题
+4. **关键知识点**：提取4-6个核心知识点
+5. 医学术语准确，保留必要英文缩写
+
+${imageList}
 
 # Output
 严格输出以下 JSON，不要其他内容：
 {
-  "title": "案例标题（15字以内，反映文献核心）",
+  "title": "案例标题（15字以内）",
   "category": "SVT/VT/AF/AFL 之一",
   "difficulty": "基础/进阶/高级",
-  "description": "病史摘要（含年龄性别主诉关键体征，80-150字，充分利用文献内容）",
-  "ecg_findings": ["详细心电图发现1（含测量值）","发现2","发现3","发现4","发现5"],
-  "question": "分步教学问题：Step1-体表ECG初步分析 → Step2-腔内电图关键鉴别点 → Step3-消融策略选择？用分号分隔各步骤",
-  "hint": "教学提示（引导思考方向，不直接给药方）",
+  "description": "病史摘要（80-150字）",
+  "ecg_findings": ["发现1","发现2","发现3","发现4","发现5"],
+  "question": "分步教学问题（用分号分隔）",
+  "hint": "教学提示",
   "key_points": ["知识点1","知识点2","知识点3","知识点4","知识点5","知识点6"],
-  "mapping_system": "Carto/EnSite/Rhythmia 或空字符串"
+  "mapping_system": "Carto/EnSite/Rhythmia 或空字符串",
+  "image_urls": ["图1URL","图2URL"...]
 }`;
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const { text } = await request.json();
+    const body = await request.json();
+    const text = body.text as string;
+    const imageUrls = (body.imageUrls as string[]) || [];
 
     if (!text || text.trim().length < 50) {
       return NextResponse.json({ error: "文字内容过少，无法提取病例" }, { status: 400 });
@@ -54,7 +65,7 @@ export async function POST(request: NextRequest) {
       temperature: 0.5,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: EXTRACT_PROMPT },
+        { role: "system", content: buildPrompt(imageUrls) },
         { role: "user", content: `文献内容：\n\n${truncated}` },
       ],
     });

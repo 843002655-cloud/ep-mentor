@@ -51,24 +51,56 @@ export default function AdminGeneratePage() {
     try {
       // Step 1: Parse PDF in browser using PDF.js (CDN)
       const arrayBuffer = await pdfFile.arrayBuffer();
-      const pdfjsLib = (window as unknown as Record<string, { getDocument: (d: { data: Uint8Array }) => { promise: Promise<{ numPages: number; getPage: (n: number) => Promise<{ getTextContent: () => Promise<{ items: { str: string }[] }> }> }> } }>).pdfjsLib;
+      const pdfjsLib = (window as unknown as Record<string, { getDocument: (d: { data: Uint8Array }) => { promise: Promise<{ numPages: number; getPage: (n: number) => Promise<{ getTextContent: () => Promise<{ items: { str: string }[] }>; render: (opts: { canvasContext: CanvasRenderingContext2D; viewport: { width: number; height: number } }) => Promise<void>; getViewport: (opts: { scale: number }) => { width: number; height: number } }> }> } }>).pdfjsLib;
       if (!pdfjsLib) throw new Error("PDF.js 未加载，请刷新页面重试");
 
       const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
       let text = "";
+      const imageUrls: string[] = [];
+
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
+        // Extract text
         const content = await page.getTextContent();
         text += content.items.map((item) => item.str).join(" ") + "\n";
+
+        // Render page to image (first 10 pages max)
+        if (i <= 10) {
+          try {
+            const viewport = page.getViewport({ scale: 1.5 });
+            const canvas = document.createElement("canvas");
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+              await page.render({ canvasContext: ctx, viewport });
+              const blob = await new Promise<Blob>((resolve) =>
+                canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.8)
+              );
+              // Upload to Supabase Storage
+              const supabase = (await import("@/lib/supabase")).getSupabase();
+              const fileName = `pdf-${Date.now()}-p${i}.jpg`;
+              const { data: uploadData, error: uploadErr } = await supabase.storage
+                .from("case-images")
+                .upload(fileName, blob, { contentType: "image/jpeg", upsert: true });
+              if (!uploadErr && uploadData) {
+                const { data: urlData } = supabase.storage
+                  .from("case-images")
+                  .getPublicUrl(fileName);
+                if (urlData?.publicUrl) imageUrls.push(urlData.publicUrl);
+              }
+            }
+          } catch { /* skip image extraction for this page */ }
+        }
       }
 
       if (!text.trim()) throw new Error("PDF 无可提取文字（可能为扫描件）");
 
-      // Step 2: Send text to server for AI extraction
+      // Step 2: Send text + image URLs to server for AI extraction
       const res = await fetch("/api/upload-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: text.slice(0, 10000) }),
+        body: JSON.stringify({ text: text.slice(0, 10000), imageUrls }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "提取失败");
