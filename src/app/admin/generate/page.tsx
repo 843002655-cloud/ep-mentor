@@ -92,19 +92,18 @@ export default function AdminGeneratePage() {
               const blob = await new Promise<Blob>((resolve) =>
                 canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.8)
               );
-              // Upload to Supabase Storage
-              const supabase = (await import("@/lib/supabase")).getSupabase();
-              const fileName = `pdf-${Date.now()}-p${i}.jpg`;
-              const { error: uploadErr } = await supabase.storage
-                .from("case-images")
-                .upload(fileName, blob, { contentType: "image/jpeg", upsert: true });
-              if (uploadErr) {
-                console.warn("Image upload failed:", uploadErr.message);
+              // Upload via admin API (bypasses RLS)
+              const uploadForm = new FormData();
+              uploadForm.append("file", blob, `pdf-p${i}.jpg`);
+              const uploadRes = await fetch("/api/upload-image", {
+                method: "POST",
+                body: uploadForm,
+              });
+              if (uploadRes.ok) {
+                const uploadData = await uploadRes.json();
+                if (uploadData.url) imageUrls.push(uploadData.url);
               } else {
-                const { data: urlData } = supabase.storage
-                  .from("case-images")
-                  .getPublicUrl(fileName);
-                if (urlData?.publicUrl) imageUrls.push(urlData.publicUrl);
+                console.warn("Image upload failed:", await uploadRes.text());
               }
             }
           } catch(e) { console.warn("Page render failed:", e); }
