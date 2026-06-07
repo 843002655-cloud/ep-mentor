@@ -43,6 +43,11 @@ export default function CaseDetailPage() {
       setCaseData(c as Case);
       const content = (c as Case).content_json;
       const extracted: Figure[] = [];
+      // Build patient info string
+      const p = (content?.patient || {}) as Record<string, unknown>;
+      const patientInfo = p.age
+        ? `${p.gender || ""}，${p.age}岁。主诉：${p.chief_complaint || ""}。${p.history || ""}`
+        : "";
       if (content && typeof content === "object") {
         const ecgObj = content.ecg_findings as Record<string, unknown> | undefined;
         const figsFromPdf = ecgObj?.figures as Figure[] | undefined;
@@ -59,6 +64,14 @@ export default function CaseDetailPage() {
           }));
         }
       }
+      // Add Step 0: Patient background
+      const introFigure: Figure = {
+        figure_number: "病例背景",
+        title: "患者信息与病史",
+        description: patientInfo ? `${patientInfo}` : (c as Case).description,
+        teaching_points: "在分析心电图之前，先了解患者的年龄、性别、主诉和既往史。病史往往能给你关键的诊断线索。",
+        key_question: "阅读患者的病史后，你的初步印象是什么？哪些信息对你后续的分析可能有帮助？",
+      };
       // Fallback: if no figures, create steps from ecg_findings
       if (extracted.length === 0 && (c.ecg_findings?.length || 0) > 0) {
         (c.ecg_findings || []).forEach((finding, i) => {
@@ -71,6 +84,8 @@ export default function CaseDetailPage() {
           });
         });
       }
+      // Prepend intro step
+      extracted.unshift(introFigure);
       setFigures(extracted);
 
       if (extracted.length > 0) {
