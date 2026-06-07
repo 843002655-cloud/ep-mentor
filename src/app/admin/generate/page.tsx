@@ -43,6 +43,7 @@ export default function AdminGeneratePage() {
       key_points: (c.key_points as string[]) || [],
       is_published: false,
       mapping_system: (c.mapping_system as string) || "",
+      content_json: c as Record<string, unknown>,
     };
   };
 
@@ -90,52 +91,31 @@ export default function AdminGeneratePage() {
             const ctx = canvas.getContext("2d");
             if (!ctx) { console.warn("No 2d context for page", i); continue; }
             await page.render({ canvasContext: ctx, viewport });
-            const blob = await new Promise<Blob>((resolve, reject) => {
-              canvas.toBlob((b) => {
-                if (b && b.size > 0) resolve(b);
-                else reject(new Error("Empty blob"));
-              }, "image/jpeg", 0.7);
-            });
-            console.log(`Page ${i}: blob size=${blob.size}, type=${blob.type}`);
-            const uploadForm = new FormData();
-            const file = new File([blob], `pdf-p${i}.jpg`, { type: "image/jpeg" });
-            uploadForm.append("file", file);
-            const uploadRes = await fetch("/api/upload-image", {
-              method: "POST",
-              body: uploadForm,
-            });
-            const uploadData = await uploadRes.json();
-            console.log(`Page ${i} upload:`, uploadRes.status, uploadData);
-            if (uploadRes.ok && uploadData.url) {
-              imageUrls.push(uploadData.url);
-            }
-          } catch(e) { console.error("Page render/upload failed for page", i, e); }
+            // Convert to base64 data URL directly (bypass Storage)
+            const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+            imageUrls.push(dataUrl);
+          } catch(e) { console.warn("Page render failed for page", i, e); }
         }
       }
 
       if (!text.trim()) throw new Error("PDF 无可提取文字（可能为扫描件）");
 
-      // Step 2: Send text + image URLs to server for AI extraction
+      // Step 2: Send text to AI (don't send base64 — too large)
       const res = await fetch("/api/upload-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: text.slice(0, 10000), imageUrls }),
+        body: JSON.stringify({ text: text.slice(0, 10000), imageUrls: [] }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "提取失败");
-      // Include image info
-      const resultCase = { ...data.case };
-      if (imageUrls.length > 0) {
-        // Inject image URLs into ecg_findings.figures if not already present
-        if (!resultCase.ecg_findings?.figures?.length) {
-          resultCase.image_urls = imageUrls;
-        }
-      }
+
+      // Inject base64 images into the generated case
+      const resultCase = { ...data.case, image_urls: imageUrls };
       setPdfResult(JSON.stringify(resultCase, null, 2));
       if (imageUrls.length > 0) {
-        setPdfError(`✅ 成功提取 ${imageUrls.length} 张图片`);
+        setPdfError(`✅ 成功提取 ${imageUrls.length} 张页面图片（base64，无需Storage）`);
       } else {
-        setPdfError("⚠️ 图片上传失败（请确保 Supabase Storage bucket 已创建并设为 Public，且已执行允许公开上传的 SQL）");
+        setPdfError("⚠️ 未提取到图片");
       }
     } catch (err: unknown) { setPdfError((err as Error).message); }
     finally { setPdfUploading(false); }

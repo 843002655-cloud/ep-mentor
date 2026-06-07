@@ -51,8 +51,15 @@ export default function CaseDetailPage() {
       if (content && typeof content === "object") {
         const ecgObj = content.ecg_findings as Record<string, unknown> | undefined;
         const figsFromPdf = ecgObj?.figures as Figure[] | undefined;
-        if (figsFromPdf && figsFromPdf.length > 0) extracted.push(...figsFromPdf);
-        // Also check image_urls array
+        if (figsFromPdf && figsFromPdf.length > 0) {
+          // Map base64 image_urls to figures if available
+          const imgUrls = (content.image_urls as string[]) || [];
+          figsFromPdf.forEach((fig, i) => {
+            if (!fig.image_url && imgUrls[i]) fig.image_url = imgUrls[i];
+          });
+          extracted.push(...figsFromPdf);
+        }
+        // Also check image_urls array for flat cases
         const imgUrls = (content.image_urls as string[]) || [];
         if (extracted.length === 0 && imgUrls.length > 0) {
           imgUrls.forEach((url, i) => extracted.push({
