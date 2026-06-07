@@ -95,17 +95,19 @@ export default function AdminGeneratePage() {
               // Upload to Supabase Storage
               const supabase = (await import("@/lib/supabase")).getSupabase();
               const fileName = `pdf-${Date.now()}-p${i}.jpg`;
-              const { data: uploadData, error: uploadErr } = await supabase.storage
+              const { error: uploadErr } = await supabase.storage
                 .from("case-images")
                 .upload(fileName, blob, { contentType: "image/jpeg", upsert: true });
-              if (!uploadErr && uploadData) {
+              if (uploadErr) {
+                console.warn("Image upload failed:", uploadErr.message);
+              } else {
                 const { data: urlData } = supabase.storage
                   .from("case-images")
                   .getPublicUrl(fileName);
                 if (urlData?.publicUrl) imageUrls.push(urlData.publicUrl);
               }
             }
-          } catch { /* skip image extraction for this page */ }
+          } catch(e) { console.warn("Page render failed:", e); }
         }
       }
 
@@ -119,7 +121,20 @@ export default function AdminGeneratePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "提取失败");
-      setPdfResult(JSON.stringify(data.case, null, 2));
+      // Include image info
+      const resultCase = { ...data.case };
+      if (imageUrls.length > 0) {
+        // Inject image URLs into ecg_findings.figures if not already present
+        if (!resultCase.ecg_findings?.figures?.length) {
+          resultCase.image_urls = imageUrls;
+        }
+      }
+      setPdfResult(JSON.stringify(resultCase, null, 2));
+      if (imageUrls.length > 0) {
+        setPdfError(`✅ 成功提取 ${imageUrls.length} 张图片`);
+      } else {
+        setPdfError("⚠️ 图片上传失败（请确保 Supabase Storage bucket 已创建并设为 Public，且已执行允许公开上传的 SQL）");
+      }
     } catch (err: unknown) { setPdfError((err as Error).message); }
     finally { setPdfUploading(false); }
   };
