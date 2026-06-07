@@ -49,23 +49,6 @@ export default function CreateCasePage() {
     setImages((prev) => prev.filter((_, i) => i !== idx).map((img, i) => ({ ...img, label: `图${i + 1}` })));
   };
 
-  // ── PDF text extraction (via server-side markitdown) ────────
-  const extractPdfText = async () => {
-    if (!pdfFile) return;
-    setMsg("正在通过 markitdown 提取 PDF 文字...");
-    try {
-      const fd = new FormData();
-      fd.append("file", pdfFile);
-      const res = await fetch("/api/extract-pdf-text", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "提取失败");
-      setPdfText(data.text);
-      setMsg(`✅ 提取 ${data.text.length} 字`);
-    } catch (e) {
-      setMsg("PDF 提取失败：" + (e as Error).message + "。请手动粘贴文字");
-    }
-  };
-
   // ── Resize image before upload ──────────────────────────────
   const resizeImage = (file: File, maxW = 1200): Promise<Blob> => {
     return new Promise((resolve) => {
@@ -130,24 +113,34 @@ export default function CreateCasePage() {
 
   // ── Generate ────────────────────────────────────────────────
   const handleGenerate = async () => {
-    if (images.length === 0 && !pdfText.trim()) { setMsg("请至少上传图片或提供 PDF 文字"); return; }
+    if (images.length === 0 && !pdfText.trim() && !pdfFile) { setMsg("请至少上传图片或 PDF"); return; }
     setGenerating(true); setMsg(""); setResult("");
 
     try {
       // Upload images first
       const imageUrls = await uploadAllImages();
-      if (imageUrls.length === 0 && images.length > 0) {
-        setMsg("⚠️ 图片上传失败，但将继续生成文字内容");
-      }
-      // Upload video
       const vUrl = await uploadVideo();
 
-      // Call AI
+      // Step 1: Extract text from PDF (server-side via API)
+      let textToSend = pdfText;
+      if (!textToSend && pdfFile) {
+        setMsg("📄 服务器正在提取 PDF 文字...");
+        const fd = new FormData();
+        fd.append("file", pdfFile);
+        const texRes = await fetch("/api/extract-pdf-text", { method: "POST", body: fd });
+        if (texRes.ok) {
+          const texData = await texRes.json();
+          textToSend = texData.text;
+          setPdfText(textToSend);
+        }
+      }
+
+      // Step 2: Call AI
       const res = await fetch("/api/generate-full-case", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text: pdfText || "请根据提供的图片生成电生理教学案例",
+          text: textToSend || "请根据图片生成教学案例",
           imageUrls,
           videoUrl: vUrl,
           category,
@@ -228,7 +221,7 @@ export default function CreateCasePage() {
           <div className="card">
             <h3 className="font-semibold text-[#1A2332] mb-3">📄 PDF 文字</h3>
             <div className="border-2 border-dashed border-[#C5D3E0] rounded-lg p-4 text-center mb-3">
-              <input type="file" accept=".pdf" onChange={(e) => { const f = e.target.files?.[0]; setPdfFile(f || null); if (f) extractPdfText(); }} className="hidden" id="pdf-upload" />
+              <input type="file" accept=".pdf" onChange={(e) => setPdfFile(e.target.files?.[0] || null)} className="hidden" id="pdf-upload" />
               <label htmlFor="pdf-upload" className="cursor-pointer block">
                 <div className="text-2xl mb-1">📎</div>
                 <p className="text-sm text-[#1B4F8A]">{pdfFile ? pdfFile.name : "点击上传PDF"}</p>
