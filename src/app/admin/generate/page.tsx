@@ -128,11 +128,17 @@ export default function AdminGeneratePage() {
     setPdfSaving(true);
     try {
       const c = JSON.parse(pdfResult) as Record<string, unknown>;
-      await caseService.createCase(flattenCase(c) as never);
+      const flat = flattenCase(c);
+      console.log("Saving case:", JSON.stringify(flat, null, 2));
+      await caseService.createCase(flat as never);
       setPdfResult(""); setPdfFile(null);
       if (fileRef.current) fileRef.current.value = "";
       alert("病例已保存！去 /admin/cases 编辑发布");
-    } catch (e) { alert("保存失败：" + ((e as Error).message || String(e))); }
+    } catch (e) {
+      console.error("Save error:", e);
+      const msg = e instanceof Error ? e.message : String(e);
+      alert("保存失败：" + msg);
+    }
     finally { setPdfSaving(false); }
   };
 
