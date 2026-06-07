@@ -8,7 +8,13 @@ export async function POST(request: NextRequest) {
     if (!file) return NextResponse.json({ error: "无文件" }, { status: 400 });
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const fileName = `pdf-${Date.now()}-${file.name || "page.jpg"}`;
+    // Sanitize filename: remove Chinese characters and special chars
+    const safeName = (file.name || "page.jpg")
+      .replace(/[^\x00-\x7F]/g, "")  // remove non-ASCII
+      .replace(/[^a-zA-Z0-9._-]/g, "_") // replace special chars
+      .replace(/_{2,}/g, "_") // collapse multiple underscores
+      || "image.jpg";
+    const fileName = `pdf-${Date.now()}-${safeName}`;
 
     const { error } = await supabaseAdmin.storage
       .from("case-images")

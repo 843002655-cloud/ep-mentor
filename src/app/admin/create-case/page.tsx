@@ -66,14 +66,35 @@ export default function CreateCasePage() {
     }
   };
 
+  // ── Resize image before upload ──────────────────────────────
+  const resizeImage = (file: File, maxW = 1200): Promise<Blob> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxW / img.width);
+        if (scale >= 1) { resolve(file); return; }
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { resolve(file); return; }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((b) => resolve(b || file), "image/jpeg", 0.7);
+      };
+      img.onerror = () => resolve(file);
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   // ── Upload all images ───────────────────────────────────────
   const uploadAllImages = async (): Promise<string[]> => {
     if (images.length === 0) return [];
     setImgUploading(true);
     const urls: string[] = [];
     for (let i = 0; i < images.length; i++) {
+      const compressed = await resizeImage(images[i].file);
       const fd = new FormData();
-      fd.append("file", images[i].file);
+      fd.append("file", compressed, "image.jpg");
       try {
         const res = await fetch("/api/upload-image", { method: "POST", body: fd });
         if (res.ok) {
@@ -86,18 +107,7 @@ export default function CreateCasePage() {
     }
     setImgUploading(false);
     if (urls.length === 0 && images.length > 0) {
-      // Fallback: convert to base64 and send directly
-      setMsg("⚠️ 图片上传失败，使用 base64 备用方案...");
-      const base64Urls: string[] = [];
-      for (const img of images) {
-        const dataUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.readAsDataURL(img.file);
-        });
-        base64Urls.push(dataUrl);
-      }
-      return base64Urls;
+      setMsg("⚠️ 所有图片上传失败。检查 Storage bucket 是否存在且设为 Public");
     }
     return urls;
   };
