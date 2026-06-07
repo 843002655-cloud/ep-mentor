@@ -9,59 +9,63 @@ const MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
 
 function buildPrompt(category: string, difficulty: string, imageCount: number, hasVideo: boolean): string {
   const videoHint = hasVideo ? '\n- Video reference available: include video_url if relevant' : '';
-  return `# Role
-顶级电生理医学编辑。从以下文献内容中生成一个完整的苏格拉底式互动教学案例。
+  return `# ⚠️ CRITICAL RULE: ONLY EXTRACT, NEVER INVENT ⚠️
+你是一个文献内容提取器，不是内容生成器。
+
+# STRICT RULES — VIOLATIONS WILL BE REJECTED
+1. **每个字都必须来自提供的PDF文献原文**。禁止编造任何数据、患者信息、测量值、诊断、知识点。
+2. 如果文献中没有提到年龄/性别，patient 里就不要填。不要猜测。
+3. 如果文献中没有提到某个测量值，details 里就不要写具体数字。
+4. **图片匹配规则**：当前有 ${imageCount} 张图片，按顺序对应文献中的图1、图2...图${imageCount}。请在文献原文中查找"图1""Fig 1""Figure 1"等标注，提取该图的标题和描述作为 figures[0]，以此类推。如果文献中找不到某张图的描述，figures 中注明"文献未提供描述"。
+5. key_points 必须直接从文献原文中提取，不能自行总结。
+6. question 必须基于文献中该图/该阶段的原文内容提出。
+
+# Task
+从下方【PDF 文献原文】中提取内容，填入 JSON 结构。缺失的信息留空字符串 ""，不要编造。
 
 # Context
-- 分类：${category} / 难度：${difficulty}
-- 图片数量：${imageCount} 张（按 PDF 图号顺序排列）
+- 用户标记的分类：${category} / 难度：${difficulty}
+- 图片数量：${imageCount} 张（按文献图号顺序：图1~图${imageCount}）
 ${videoHint}
 
-# Requirements
-1. 所有数据从文献原文提取，不编造
-2. 为每一张图设计一个苏格拉底式提问
-3. 回答必须是开放式，不能用是/否回答
-4. 保留英文缩写（AVNRT, CTI, PVI, His, CS等）
-
-# Output JSON Schema (MUST follow exactly)
+# Output JSON Schema
 {
-  "title": "案例标题（15字内）",
+  "title": "文献中的病例标题（原文）",
   "category": "${category}",
   "difficulty": "${difficulty}",
-  "source": "来源文献",
+  "source": "文献出处（如有）",
   "patient": {
-    "age": 数字, "gender": "男/女",
-    "chief_complaint": "主诉",
-    "history": "现病史(100-150字)",
-    "physical_exam": "体检要点",
-    "comorbidities": ["合并症"]
+    "age": "原文数字", "gender": "原文性别",
+    "chief_complaint": "原文主诉",
+    "history": "原文病史（直接引用）",
+    "physical_exam": "原文体检",
+    "comorbidities": ["原文合并症"]
   },
-  "description": "病例一句话摘要",
+  "description": "从文献提取的病例摘要",
   "ecg_findings": {
-    "summary": "总体描述",
-    "details": ["发现1(含测量值)","发现2","发现3","发现4","发现5"],
+    "summary": "文献原文ECG描述",
+    "details": ["文献中提到的ECG特征（含原文测量值）"],
     "figures": [{
       "figure_number": "图1",
-      "title": "图片标题",
-      "description": "图片内容详细描述",
-      "teaching_points": "这张图的核心教学价值",
-      "key_question": "苏格拉底式提问(开放式)"
+      "title": "文献中原图的标题",
+      "description": "文献中对图1的原文描述",
+      "teaching_points": "文献中提到的这张图的教学要点",
+      "key_question": "基于文献此图内容提出的开放式问题"
     }]
   },
   "learning_stages": [{
     "stage": 1,
-    "title": "阶段标题",
-    "question": "引导问题",
-    "key_concept": "核心知识点",
-    "expected_answer_points": ["要点1","要点2"],
-    "common_mistakes": ["错误1"],
-    "figure_reference": "参考图号"
+    "title": "从文献内容提炼的阶段",
+    "question": "基于文献此阶段内容的提问",
+    "key_concept": "文献提到的核心概念",
+    "expected_answer_points": ["文献中暗示的答案要点"],
+    "figure_reference": "对应图号"
   }],
-  "final_diagnosis": "标准诊断名称",
-  "key_points": ["知识点1","知识点2","知识点3","知识点4","知识点5","知识点6"],
-  "guideline_references": ["指南+年份+级别"],
-  "clinical_pearls": ["经验1","经验2"],
-  "tags": ["标签1","标签2"]
+  "final_diagnosis": "文献中的最终诊断",
+  "key_points": ["文献原文中的知识点"],
+  "guideline_references": ["文献引用的指南"],
+  "clinical_pearls": ["文献中提到的临床经验"],
+  "tags": ["文献关键词"]
 }`;
 }
 
@@ -79,12 +83,12 @@ export async function POST(request: NextRequest) {
 
     const response = await deepseek.chat.completions.create({
       model: MODEL,
-      max_tokens: 4096,
+      max_tokens: 8192,
       temperature: 0.5,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: buildPrompt(category, difficulty, imageCount, hasVideo) },
-        { role: "user", content: `${effectiveText}\n\n${hasText ? "以上是文献原文，请提取病例。" : "请根据图片生成病例。分类：" + category + "，难度：" + difficulty}`.slice(0, 8000) },
+        { role: "user", content: `【PDF 文献原文 — 以下所有内容均来自用户上传的PDF文献，请严格从中提取，不得编造】\n\n${effectiveText}`.slice(0, 12000) },
       ],
     });
 
