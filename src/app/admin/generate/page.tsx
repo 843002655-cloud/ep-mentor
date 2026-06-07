@@ -94,7 +94,8 @@ export default function AdminGeneratePage() {
               );
               // Upload via admin API (bypasses RLS)
               const uploadForm = new FormData();
-              uploadForm.append("file", blob, `pdf-p${i}.jpg`);
+              const file = new File([blob], `pdf-p${i}.jpg`, { type: "image/jpeg" });
+              uploadForm.append("file", file);
               const uploadRes = await fetch("/api/upload-image", {
                 method: "POST",
                 body: uploadForm,
@@ -103,7 +104,8 @@ export default function AdminGeneratePage() {
                 const uploadData = await uploadRes.json();
                 if (uploadData.url) imageUrls.push(uploadData.url);
               } else {
-                console.warn("Image upload failed:", await uploadRes.text());
+                const errText = await uploadRes.text();
+                console.warn("Image upload failed:", errText.slice(0, 200));
               }
             }
           } catch(e) { console.warn("Page render failed:", e); }
