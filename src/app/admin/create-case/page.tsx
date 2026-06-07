@@ -49,28 +49,20 @@ export default function CreateCasePage() {
     setImages((prev) => prev.filter((_, i) => i !== idx).map((img, i) => ({ ...img, label: `图${i + 1}` })));
   };
 
-  // ── PDF text extraction ─────────────────────────────────────
+  // ── PDF text extraction (via server-side markitdown) ────────
   const extractPdfText = async () => {
     if (!pdfFile) return;
-    setMsg("正在提取PDF文字...");
+    setMsg("正在通过 markitdown 提取 PDF 文字...");
     try {
-      const buf = await pdfFile.arrayBuffer();
-      const pdfjsLib = (window as unknown as Record<string, Record<string, unknown>>).pdfjsLib as { getDocument: (d: { data: Uint8Array }) => { promise: Promise<{ numPages: number; getPage: (n: number) => Promise<{ getTextContent: () => Promise<{ items: { str: string }[] }> }> }> } } | undefined;
-      if (!pdfjsLib) throw new Error("PDF.js 未加载");
-      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
-      let text = "";
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        text += (await page.getTextContent()).items.map((x) => x.str).join(" ") + "\n";
-      }
-      setPdfText(text);
-      if (text.trim().length < 50) {
-        setMsg("⚠️ PDF 无可提取文字（可能为扫描件），请手动粘贴文字，或仅依靠图片生成");
-      } else {
-        setMsg(`✅ 提取 ${pdf.numPages} 页，${text.length} 字`);
-      }
+      const fd = new FormData();
+      fd.append("file", pdfFile);
+      const res = await fetch("/api/extract-pdf-text", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "提取失败");
+      setPdfText(data.text);
+      setMsg(`✅ 提取 ${data.text.length} 字`);
     } catch (e) {
-      setMsg("PDF 提取失败：" + (e as Error).message);
+      setMsg("PDF 提取失败：" + (e as Error).message + "。请手动粘贴文字");
     }
   };
 
