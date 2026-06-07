@@ -145,10 +145,7 @@ function CaseList() {
             {filtered.map((c) => (
               <div
                 key={c.id} role="link" tabIndex={0}
-                onClick={() => {
-                  if (!loggedIn) { alert("请先登录或注册，即可免费开始学习"); router.push(ROUTES.AUTH_REDIRECT(ROUTES.CASE_DETAIL(c.id))); }
-                  else router.push(ROUTES.CASE_DETAIL(c.id));
-                }}
+                onClick={() => router.push(ROUTES.CASE_DETAIL(c.id))}
                 onKeyDown={(e)=>{if(e.key==="Enter")e.currentTarget.click();}}
                 className="card group flex flex-col cursor-pointer"
               >
