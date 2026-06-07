@@ -89,12 +89,19 @@ export default function AdminGeneratePage() {
             canvas.width = viewport.width;
             canvas.height = viewport.height;
             const ctx = canvas.getContext("2d");
-            if (!ctx) { console.warn("No 2d context for page", i); continue; }
+            if (!ctx) continue;
             await page.render({ canvasContext: ctx, viewport });
-            // Convert to base64 data URL directly (bypass Storage)
-            const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
-            imageUrls.push(dataUrl);
-          } catch(e) { console.warn("Page render failed for page", i, e); }
+            // Convert to blob, then upload via server API (Service Role bypasses RLS)
+            const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.7));
+            if (!blob || blob.size < 100) continue;
+            const fd = new FormData();
+            fd.append("file", blob, `p${i}.jpg`);
+            const uploadRes = await fetch("/api/upload-image", { method: "POST", body: fd });
+            if (uploadRes.ok) {
+              const { url } = await uploadRes.json();
+              if (url) imageUrls.push(url as string);
+            }
+          } catch { /* skip */ }
         }
       }
 
@@ -109,13 +116,13 @@ export default function AdminGeneratePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "提取失败");
 
-      // Inject base64 images into the generated case
+      // Inject storage URLs into the generated case
       const resultCase = { ...data.case, image_urls: imageUrls };
       setPdfResult(JSON.stringify(resultCase, null, 2));
       if (imageUrls.length > 0) {
-        setPdfError(`✅ 成功提取 ${imageUrls.length} 张页面图片（base64，无需Storage）`);
+        setPdfError(`✅ 成功上传 ${imageUrls.length} 张图片到 Storage`);
       } else {
-        setPdfError("⚠️ 未提取到图片");
+        setPdfError("⚠️ 图片上传失败，检查服务器日志：pm2 logs ep-mentor --lines 5");
       }
     } catch (err: unknown) { setPdfError((err as Error).message); }
     finally { setPdfUploading(false); }
