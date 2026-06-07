@@ -68,10 +68,13 @@ ${videoHint}
 export async function POST(request: NextRequest) {
   try {
     const { text, imageUrls, videoUrl, category, difficulty } = await request.json();
-    if (!text || text.trim().length < 50) {
-      return NextResponse.json({ error: "PDF 文字内容过少" }, { status: 400 });
-    }
     const imageCount = (imageUrls as string[])?.length || 0;
+    const hasText = text && text.trim().length >= 50;
+    // Allow generation with just images (even without PDF text)
+    if (!hasText && imageCount === 0) {
+      return NextResponse.json({ error: "请提供 PDF 文字或上传图片" }, { status: 400 });
+    }
+    const effectiveText = hasText ? text : `请根据提供的 ${imageCount} 张电生理图片，生成一个苏格拉底式互动教学案例。`;
     const hasVideo = !!videoUrl;
 
     const response = await deepseek.chat.completions.create({
@@ -81,7 +84,7 @@ export async function POST(request: NextRequest) {
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: buildPrompt(category, difficulty, imageCount, hasVideo) },
-        { role: "user", content: `文献内容：\n\n${(text as string).slice(0, 8000)}` },
+        { role: "user", content: `${effectiveText}\n\n${hasText ? "以上是文献原文，请提取病例。" : "请根据图片生成病例。分类：" + category + "，难度：" + difficulty}`.slice(0, 8000) },
       ],
     });
 

@@ -64,7 +64,11 @@ export default function CreateCasePage() {
         text += (await page.getTextContent()).items.map((x) => x.str).join(" ") + "\n";
       }
       setPdfText(text);
-      setMsg(`✅ 提取 ${pdf.numPages} 页文字`);
+      if (text.trim().length < 50) {
+        setMsg("⚠️ PDF 无可提取文字（可能为扫描件），请手动粘贴文字，或仅依靠图片生成");
+      } else {
+        setMsg(`✅ 提取 ${pdf.numPages} 页，${text.length} 字`);
+      }
     } catch (e) {
       setMsg("PDF 提取失败：" + (e as Error).message);
     }
@@ -108,7 +112,7 @@ export default function CreateCasePage() {
 
   // ── Generate ────────────────────────────────────────────────
   const handleGenerate = async () => {
-    if (!pdfText && images.length === 0) { setMsg("请提供 PDF 文字或图片"); return; }
+    if (images.length === 0 && !pdfText.trim()) { setMsg("请至少上传图片或提供 PDF 文字"); return; }
     setGenerating(true); setMsg(""); setResult("");
 
     try {
