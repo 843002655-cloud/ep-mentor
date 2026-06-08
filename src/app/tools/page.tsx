@@ -1,8 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import AppLayout from "@/components/AppLayout";
 import AnimatedNumber from "@/components/AnimatedNumber";
+
+const HeartModel = dynamic(() => import("@/components/HeartModel"), {
+  ssr: false,
+  loading: () => <div className="bg-[#0a0e1a] rounded-xl aspect-[4/3] flex items-center justify-center text-slate-500 text-sm">加载 3D 模型中...</div>,
+});
 
 /* ── EP Calculator Components ──────────────────────────────────── */
 
@@ -151,7 +157,10 @@ export default function ToolsPage() {
     <AppLayout>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <h1 className="text-3xl font-bold text-[#1A2332] dark:text-slate-100 mb-2 font-serif">EP 工具库</h1>
-        <p className="text-[#6B7F96] dark:text-slate-400 mb-8">电生理临床常用计算器与参考工具</p>
+        <p className="text-[#6B7F96] dark:text-slate-400 mb-6">电生理临床常用计算器与参考工具</p>
+
+        {/* 3D Heart Model */}
+        <HeartModel className="mb-8" />
 
         <div className="grid lg:grid-cols-2 gap-6">
           <div className="card">
