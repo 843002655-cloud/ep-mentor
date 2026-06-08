@@ -30,8 +30,8 @@ export default function QuizPage() {
     });
   }, []);
 
-  if (loading) return <AppLayout><div className="max-w-3xl mx-auto px-4 py-12 text-center text-[#6B7F96]">准备题目中...</div></AppLayout>;
-  if (!questions.length) return <AppLayout><div className="max-w-3xl mx-auto px-4 py-12 text-center text-[#6B7F96]">暂无题目</div></AppLayout>;
+  if (loading) return <AppLayout><div className="max-w-3xl mx-auto px-4 py-12 text-center text-[#6B7F96] dark:text-slate-400">准备题目中...</div></AppLayout>;
+  if (!questions.length) return <AppLayout><div className="max-w-3xl mx-auto px-4 py-12 text-center text-[#6B7F96] dark:text-slate-400">暂无题目</div></AppLayout>;
 
   const q = questions[currentQ];
   const handleSubmit = () => { if (selected === null) return; setSubmitted(true); if (selected === q.correct) setScore((s) => s + 1); };
@@ -44,41 +44,41 @@ export default function QuizPage() {
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h1 className="text-3xl font-bold text-[#1A2332] mb-2 font-serif">知识测验</h1>
-        <p className="text-[#6B7F96] mb-8">巩固你的电生理知识（共 {questions.length} 题）</p>
+        <h1 className="text-3xl font-bold text-[#1A2332] dark:text-slate-100 mb-2 font-serif">知识测验</h1>
+        <p className="text-[#6B7F96] dark:text-slate-400 mb-8">巩固你的电生理知识（共 {questions.length} 题）</p>
 
         {finished ? (
           <div className="card text-center">
             <div className="text-5xl mb-4">{score >= questions.length * 0.8 ? "🎉" : score >= questions.length * 0.5 ? "👍" : "📚"}</div>
-            <h2 className="text-2xl font-bold text-[#1A2332] mb-2 font-serif">测验完成！</h2>
-            <p className="text-lg text-[#6B7F96] mb-6">得分：{score} / {questions.length}（{Math.round((score / questions.length) * 100)}%）</p>
+            <h2 className="text-2xl font-bold text-[#1A2332] dark:text-slate-100 mb-2 font-serif">测验完成！</h2>
+            <p className="text-lg text-[#6B7F96] dark:text-slate-400 mb-6">得分：{score} / {questions.length}（{Math.round((score / questions.length) * 100)}%）</p>
             <button onClick={handleRestart} className="btn-primary">重新测验</button>
           </div>
         ) : (
           <>
             <div className="flex items-center gap-2 mb-6">
-              <span className="text-sm text-[#8FA0B4]">第 {currentQ + 1} / {questions.length} 题</span>
-              <div className="flex-1 h-2 bg-[#E8ECF0] rounded-full overflow-hidden">
-                <div className="h-full bg-[#1B4F8A] rounded-full transition-all" style={{ width: `${((currentQ + 1) / questions.length) * 100}%` }} />
+              <span className="text-sm text-[#8FA0B4] dark:text-slate-500">第 {currentQ + 1} / {questions.length} 题</span>
+              <div className="flex-1 h-2 bg-[#E8ECF0] dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-full bg-[#1B4F8A] dark:bg-blue-600 rounded-full transition-all" style={{ width: `${((currentQ + 1) / questions.length) * 100}%` }} />
               </div>
             </div>
             <div className="card">
-              <span className="badge-category bg-[#EBF2FA] text-[#1B4F8A] mb-3 inline-block">{q.category}</span>
-              <h2 className="text-xl font-semibold text-[#1A2332] mb-6 font-serif">{q.question}</h2>
+              <span className="badge-category bg-[#EBF2FA] dark:bg-blue-900/30 text-[#1B4F8A] dark:text-blue-300 mb-3 inline-block">{q.category}</span>
+              <h2 className="text-xl font-semibold text-[#1A2332] dark:text-slate-100 mb-6 font-serif">{q.question}</h2>
               <div className="space-y-3 mb-6">
                 {q.options.map((opt, i) => (
                   <button key={i} onClick={() => !submitted && setSelected(i)} disabled={submitted}
                     className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
-                      submitted && i === q.correct ? "border-[#0F6E56] bg-[#E8F4F0] text-[#0F6E56]"
-                      : submitted && i === selected && i !== q.correct ? "border-[#9B2C2C] bg-[#FDE8E8] text-[#9B2C2C]"
-                      : selected === i ? "border-[#1B4F8A] bg-[#EBF2FA] text-[#1B4F8A]"
-                      : "border-[#C5D3E0] text-[#3D5166] hover:border-[#1B4F8A]"
+                      submitted && i === q.correct ? "border-[#0F6E56] dark:border-emerald-400 bg-[#E8F4F0] dark:bg-emerald-900/30 text-[#0F6E56] dark:text-emerald-300"
+                      : submitted && i === selected && i !== q.correct ? "border-[#9B2C2C] dark:border-red-400 bg-[#FDE8E8] dark:bg-red-900/30 text-[#9B2C2C] dark:text-red-300"
+                      : selected === i ? "border-[#1B4F8A] dark:border-blue-400 bg-[#EBF2FA] dark:bg-slate-700 text-[#1B4F8A] dark:text-blue-400"
+                      : "border-[#C5D3E0] dark:border-slate-600 text-[#3D5166] dark:text-slate-300 hover:border-[#1B4F8A] dark:hover:border-blue-400"
                     }`}>
                     <span className="font-medium mr-2">{String.fromCharCode(65 + i)}.</span>{opt}
                   </button>
                 ))}
               </div>
-              {submitted && <div className="bg-[#F5F8FC] border border-[#DDE5EE] rounded-lg p-4 mb-6"><p className="text-sm text-[#3D5166]">{q.explanation}</p></div>}
+              {submitted && <div className="bg-[#F5F8FC] dark:bg-slate-800 border border-[#DDE5EE] dark:border-slate-700 rounded-lg p-4 mb-6"><p className="text-sm text-[#3D5166] dark:text-slate-300">{q.explanation}</p></div>}
               {!submitted ? <button onClick={handleSubmit} disabled={selected === null} className="btn-primary disabled:opacity-50">提交答案</button>
               : <button onClick={handleNext} className="btn-primary">{currentQ + 1 < questions.length ? "下一题" : "查看结果"}</button>}
             </div>
