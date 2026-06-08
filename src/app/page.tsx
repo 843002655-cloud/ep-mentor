@@ -105,52 +105,52 @@ export default function Home() {
   return (
     <AppLayout>
       {/* ═══ Hero ═══ */}
-      <section className="relative overflow-hidden bg-white border-b border-[#E8ECF0]">
+      <section className="relative overflow-hidden bg-white dark:bg-slate-900 border-b border-[#E8ECF0] dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left — Copy */}
             <div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#1A2332] mb-4 leading-tight font-serif">
-                <span className="text-[#1B4F8A]">EP</span> Mentor
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#1A2332] dark:text-slate-100 mb-4 leading-tight font-serif">
+                <span className="text-[#1B4F8A] dark:text-blue-400">EP</span> Mentor
               </h1>
-              <p className="text-xl sm:text-2xl text-[#6B7F96] mb-3 font-serif">
+              <p className="text-xl sm:text-2xl text-[#6B7F96] dark:text-slate-400 mb-3 font-serif">
                 心脏电生理 AI 导师
               </p>
-              <p className="text-lg text-[#6B7F96] mb-8 leading-relaxed">
+              <p className="text-lg text-[#6B7F96] dark:text-slate-400 mb-8 leading-relaxed">
                 通过苏格拉底式对话，像资深术者一样思考每一份 EGM
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 mb-6">
-                <Link href={ROUTES.AUTH_REGISTER} className="bg-[#1B4F8A] hover:bg-[#154070] text-white font-medium py-3 px-8 rounded-lg transition-colors text-center">
+                <Link href={ROUTES.AUTH_REGISTER} className="bg-[#1B4F8A] dark:bg-blue-600 hover:bg-[#154070] dark:hover:bg-blue-500 text-white font-medium py-3 px-8 rounded-lg transition-colors text-center">
                   免费体验 AI 导师
                 </Link>
-                <Link href={ROUTES.CASES} className="border border-[#C5D3E0] text-[#4B6080] hover:border-[#1B4F8A] hover:text-[#1B4F8A] font-medium py-3 px-8 rounded-lg transition-colors text-center">
+                <Link href={ROUTES.CASES} className="border border-[#C5D3E0] dark:border-slate-600 text-[#4B6080] dark:text-slate-300 hover:border-[#1B4F8A] dark:hover:border-blue-400 hover:text-[#1B4F8A] dark:hover:text-blue-400 font-medium py-3 px-8 rounded-lg transition-colors text-center">
                   浏览病例库
                 </Link>
               </div>
 
-              <p className="text-sm text-[#8FA0B4] flex items-center gap-2 flex-wrap">
+              <p className="text-sm text-[#8FA0B4] dark:text-slate-500 flex items-center gap-2 flex-wrap">
                 <span>🏥 已有 200+ 位电生理医生加入</span>
-                <span className="text-[#C5D3E0] hidden sm:inline">·</span>
+                <span className="text-[#C5D3E0] dark:text-slate-600 hidden sm:inline">·</span>
                 <span className="hidden sm:inline">📋 50+ 精选病例</span>
-                <span className="text-[#C5D3E0] hidden sm:inline">·</span>
+                <span className="text-[#C5D3E0] dark:text-slate-600 hidden sm:inline">·</span>
                 <span className="hidden sm:inline">🆓 每日 20 次免费对话</span>
               </p>
             </div>
 
             {/* Right — AI Demo */}
-            <div className="bg-[#F5F8FC] border border-[#DDE5EE] rounded-2xl p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#E8ECF0]">
+            <div className="bg-[#F5F8FC] dark:bg-slate-800 border border-[#DDE5EE] dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#E8ECF0] dark:border-slate-700">
                 <div className="w-3 h-3 rounded-full bg-red-400" />
                 <div className="w-3 h-3 rounded-full bg-yellow-400" />
                 <div className="w-3 h-3 rounded-full bg-green-400" />
-                <span className="text-xs text-[#8FA0B4] ml-3">EP Mentor AI · 导管室模式</span>
+                <span className="text-xs text-[#8FA0B4] dark:text-slate-500 ml-3">EP Mentor AI · 导管室模式</span>
               </div>
               <Typewriter
                 texts={aiDemoLines}
                 speed={35}
                 pause={1800}
-                className="text-sm leading-relaxed text-[#3D5166] font-mono min-h-[180px]"
+                className="text-sm leading-relaxed text-[#3D5166] dark:text-slate-300 font-mono min-h-[180px]"
               />
             </div>
           </div>
@@ -159,16 +159,16 @@ export default function Home() {
 
       {/* ═══ Features ═══ */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <h2 className="text-3xl font-bold text-center text-[#1A2332] mb-4 font-serif">为什么选择 EP Mentor</h2>
-        <p className="text-center text-[#6B7F96] mb-12 max-w-xl mx-auto">
+        <h2 className="text-3xl font-bold text-center text-[#1A2332] dark:text-slate-100 mb-4 font-serif">为什么选择 EP Mentor</h2>
+        <p className="text-center text-[#6B7F96] dark:text-slate-400 mb-12 max-w-xl mx-auto">
           不只是题库 —— 而是一套完整的电生理思维训练系统
         </p>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((f) => (
             <div key={f.title} className="card group text-center sm:text-left">
               <div className="text-3xl mb-4">{f.icon}</div>
-              <h3 className="text-lg font-semibold text-[#1A2332] mb-2 group-hover:text-[#1B4F8A] transition-colors font-serif">{f.title}</h3>
-              <p className="text-sm text-[#6B7F96] leading-relaxed">{f.desc}</p>
+              <h3 className="text-lg font-semibold text-[#1A2332] dark:text-slate-100 mb-2 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 transition-colors font-serif">{f.title}</h3>
+              <p className="text-sm text-[#6B7F96] dark:text-slate-400 leading-relaxed">{f.desc}</p>
             </div>
           ))}
         </div>
@@ -176,14 +176,14 @@ export default function Home() {
 
       {/* ═══ Featured Cases ═══ */}
       {featuredCases.length > 0 && (
-        <section className="bg-white border-y border-[#E8ECF0] py-20">
+        <section className="bg-white dark:bg-slate-900 border-y border-[#E8ECF0] dark:border-slate-700 py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-end justify-between mb-10">
               <div>
-                <h2 className="text-3xl font-bold text-[#1A2332] mb-2 font-serif">精选病例预览</h2>
-                <p className="text-[#6B7F96]">AI 导师带你逐帧解析经典电生理案例</p>
+                <h2 className="text-3xl font-bold text-[#1A2332] dark:text-slate-100 mb-2 font-serif">精选病例预览</h2>
+                <p className="text-[#6B7F96] dark:text-slate-400">AI 导师带你逐帧解析经典电生理案例</p>
               </div>
-              <Link href={ROUTES.CASES} className="text-[#1B4F8A] hover:text-[#154070] text-sm font-medium hidden sm:block">查看全部 →</Link>
+              <Link href={ROUTES.CASES} className="text-[#1B4F8A] dark:text-blue-400 hover:text-[#154070] dark:hover:text-blue-300 text-sm font-medium hidden sm:block">查看全部 →</Link>
             </div>
             <div className="grid md:grid-cols-3 gap-6">
               {featuredCases.map((c) => (
@@ -193,7 +193,7 @@ export default function Home() {
                   className="card group flex flex-col"
                 >
                   {/* ECG Thumbnail */}
-                  <div className="bg-[#F5F8FC] rounded-lg mb-4 h-32 flex items-center justify-center text-4xl select-none">
+                  <div className="bg-[#F5F8FC] dark:bg-slate-800 rounded-lg mb-4 h-32 flex items-center justify-center text-4xl select-none">
                     ⚡
                   </div>
                   <div className="flex items-center gap-2 mb-2">
@@ -201,18 +201,18 @@ export default function Home() {
                       {c.difficulty}
                     </span>
                   </div>
-                  <h3 className="font-semibold text-[#1A2332] mb-2 group-hover:text-[#1B4F8A] transition-colors font-serif line-clamp-1">
+                  <h3 className="font-semibold text-[#1A2332] dark:text-slate-100 mb-2 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 transition-colors font-serif line-clamp-1">
                     {c.title}
                   </h3>
-                  <p className="text-sm text-[#6B7F96] line-clamp-2 mb-4 flex-1">{c.description}</p>
-                  <span className="text-sm text-[#1B4F8A] font-medium group-hover:underline">
+                  <p className="text-sm text-[#6B7F96] dark:text-slate-400 line-clamp-2 mb-4 flex-1">{c.description}</p>
+                  <span className="text-sm text-[#1B4F8A] dark:text-blue-400 font-medium group-hover:underline">
                     AI 导师带你分析 →
                   </span>
                 </Link>
               ))}
             </div>
             <div className="text-center mt-8 sm:hidden">
-              <Link href={ROUTES.CASES} className="text-[#1B4F8A] text-sm">查看全部病例 →</Link>
+              <Link href={ROUTES.CASES} className="text-[#1B4F8A] dark:text-blue-400 text-sm">查看全部病例 →</Link>
             </div>
           </div>
         </section>
@@ -220,13 +220,13 @@ export default function Home() {
 
       {/* ═══ Learning Path ═══ */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <h2 className="text-3xl font-bold text-center text-[#1A2332] mb-4 font-serif">学习路径</h2>
-        <p className="text-center text-[#6B7F96] mb-12 max-w-xl mx-auto">
+        <h2 className="text-3xl font-bold text-center text-[#1A2332] dark:text-slate-100 mb-4 font-serif">学习路径</h2>
+        <p className="text-center text-[#6B7F96] dark:text-slate-400 mb-12 max-w-xl mx-auto">
           从住院医到独立术者，每一步都有结构化的训练内容
         </p>
         <div className="relative">
           {/* Vertical line (desktop) */}
-          <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-px bg-[#E8ECF0] -translate-x-1/2" />
+          <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-px bg-[#E8ECF0] dark:bg-slate-700 -translate-x-1/2" />
           <div className="space-y-8 lg:space-y-0">
             {learningPath.map((step, i) => (
               <div
@@ -236,7 +236,7 @@ export default function Home() {
                 }`}
               >
                 {/* Dot on timeline */}
-                <div className="hidden lg:block absolute left-1/2 top-6 w-4 h-4 rounded-full bg-white border-2 border-[#1B4F8A] -translate-x-1/2 z-10" />
+                <div className="hidden lg:block absolute left-1/2 top-6 w-4 h-4 rounded-full bg-white dark:bg-slate-900 border-2 border-[#1B4F8A] dark:border-blue-400 -translate-x-1/2 z-10" />
 
                 <div className={`${i % 2 === 0 ? "lg:text-right" : "lg:text-left"}`}>
                   <div
@@ -247,9 +247,9 @@ export default function Home() {
                     >
                       {step.phase}
                     </span>
-                    <h3 className="text-lg font-semibold text-[#1A2332] font-serif">{step.role}</h3>
-                    <p className="text-sm text-[#6B7F96] mt-1">{step.desc}</p>
-                    <p className="text-xs text-[#8FA0B4] mt-2">{step.cases} 个病例</p>
+                    <h3 className="text-lg font-semibold text-[#1A2332] dark:text-slate-100 font-serif">{step.role}</h3>
+                    <p className="text-sm text-[#6B7F96] dark:text-slate-400 mt-1">{step.desc}</p>
+                    <p className="text-xs text-[#8FA0B4] dark:text-slate-500 mt-2">{step.cases} 个病例</p>
                   </div>
                 </div>
                 <div className={i % 2 !== 0 ? "lg:[direction:ltr]" : ""} />
@@ -260,11 +260,11 @@ export default function Home() {
       </section>
 
       {/* ═══ Bottom CTA ═══ */}
-      <section className="bg-[#1B4F8A] py-16">
+      <section className="bg-[#1B4F8A] dark:bg-blue-600 py-16">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold text-white mb-4 font-serif">准备好提升你的电生理思维了吗？</h2>
           <p className="text-white/80 mb-8 text-lg">加入 200+ 位同行，用苏格拉底的方式重新学习电生理</p>
-          <Link href={ROUTES.AUTH_REGISTER} className="inline-block bg-white text-[#1B4F8A] hover:bg-gray-100 font-bold py-3 px-10 rounded-lg transition-colors text-lg">
+          <Link href={ROUTES.AUTH_REGISTER} className="inline-block bg-white dark:bg-slate-100 text-[#1B4F8A] dark:text-blue-700 hover:bg-gray-100 dark:hover:bg-slate-200 font-bold py-3 px-10 rounded-lg transition-colors text-lg">
             免费开始 →
           </Link>
         </div>
