@@ -78,13 +78,7 @@ button, a, .clickable {
   left: 0;
   right: 0;
   padding-bottom: env(safe-area-inset-bottom);
-  @apply bg-white dark:bg-slate-900;
-  border-top: 0.5px solid #E8ECF0;
   z-index: 40;
-}
-
-.dark .bottom-nav {
-  border-top-color: #334155;
 }
 
 /* ── 组件样式 ──────────────────────────────────────────────────── */

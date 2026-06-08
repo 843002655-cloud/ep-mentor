@@ -18,7 +18,7 @@ export default function BottomNav() {
   if (pathname.startsWith("/admin") || pathname.startsWith("/auth")) return null;
 
   return (
-    <nav className="md:hidden bottom-nav flex items-center justify-around px-2">
+    <nav className="md:hidden bottom-nav flex items-center justify-around px-2 ">
       {tabs.map((t) => {
         const active = pathname === t.href || (t.href !== "/" && pathname.startsWith(t.href));
         return (
@@ -26,7 +26,7 @@ export default function BottomNav() {
             key={t.href}
             href={t.href}
             className={`flex flex-col items-center gap-0.5 py-1.5 px-3 min-w-[48px] ${
-              active ? "text-[#1B4F8A]" : "text-[#8FA0B4]"
+              active ? "text-[#1B4F8A] dark:text-blue-400" : "text-[#8FA0B4] dark:text-slate-500"
             }`}
           >
             <span className="text-lg">{t.icon}</span>
