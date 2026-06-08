@@ -5,7 +5,7 @@ import AppLayout from "@/components/AppLayout";
 import { chatService, caseService } from "@/lib/services";
 
 type Tab = "generate" | "pdf" | "images";
-const selClass = "w-full px-3 py-2 bg-white border border-[#C5D3E0] rounded text-sm focus:outline-none focus:border-[#1B4F8A]";
+const selClass = "w-full px-3 py-2 bg-white dark:bg-slate-800 border border-[#C5D3E0] dark:border-slate-600 rounded text-sm text-[#1A2332] dark:text-slate-100 focus:outline-none focus:border-[#1B4F8A] dark:focus:border-blue-400";
 
 const flattenCase = (c: Record<string, unknown>, extra?: Record<string, unknown>) => ({
   title: (c.title as string) || "未命名",

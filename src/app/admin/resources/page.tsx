@@ -6,7 +6,7 @@ import AppLayout from "@/components/AppLayout";
 interface Resource { id: string; title: string; category: string; source: string; url: string; summary: string; }
 const empty = { title: "", category: "指南", source: "", url: "", summary: "" };
 const cats = ["指南", "文献", "视频", "工具", "其他"];
-const inputClass = "w-full px-3 py-2 bg-white border border-[#C5D3E0] rounded text-[#1A2332] text-sm focus:outline-none focus:border-[#1B4F8A]";
+const inputClass = "w-full px-3 py-2 bg-white dark:bg-slate-800 border border-[#C5D3E0] dark:border-slate-600 rounded text-[#1A2332] dark:text-slate-100 text-sm focus:outline-none focus:border-[#1B4F8A] dark:focus:border-blue-400";
 
 export default function AdminResourcesPage() {
   const [resources, setResources] = useState<Resource[]>([]);

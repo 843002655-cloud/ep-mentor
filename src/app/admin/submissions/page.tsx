@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import AppLayout from "@/components/AppLayout";
 
 interface Submission { id: string; doctor_name: string; hospital: string; case_title: string; case_content: string; status: string; created_at: string; }
-const statusColors: Record<string, string> = { pending: "bg-[#FEF3E2] text-[#854F0B]", approved: "bg-[#E8F4F0] text-[#0F6E56]", rejected: "bg-[#FDE8E8] text-[#9B2C2C]" };
+const statusColors: Record<string, string> = { pending: "bg-[#FEF3E2] dark:bg-amber-900/30 text-[#854F0B] dark:text-amber-300", approved: "bg-[#E8F4F0] dark:bg-emerald-900/30 text-[#0F6E56] dark:text-emerald-300", rejected: "bg-[#FDE8E8] dark:bg-red-900/30 text-[#9B2C2C] dark:text-red-300" };
 
 export default function AdminSubmissionsPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
