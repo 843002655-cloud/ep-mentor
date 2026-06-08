@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
 import { caseService, chatService } from "@/lib/services";
 import { SkeletonBox } from "@/components/Skeleton";
+import Markdown from "@/components/Markdown";
 import type { CaseInput } from "@/lib/services";
 
 interface Case {
@@ -245,13 +246,38 @@ export default function CaseDetailPage() {
               <div className="card">
                 <div ref={chatRef} className="h-[400px] sm:h-[450px] overflow-y-auto mb-4 space-y-3 pr-2">
                   {messages.map((msg, i) => (
-                    <div key={i} className={`flex msg-enter ${msg.role==="user"?"justify-end":"justify-start"}`}>
-                      <div className={`max-w-[85%] rounded-xl px-4 py-2.5 text-sm ${msg.role==="user"?"bg-[#1B4F8A] dark:bg-blue-600 text-white":"bg-[#F5F8FC] dark:bg-slate-800 text-[#3D5166] dark:text-slate-300"}`}>
-                        {msg.content.split("\n").map((l,j)=><span key={j}>{l}{j<msg.content.split("\n").length-1&&<br/>}</span>)}
+                    <div key={i} className={`flex gap-2 msg-enter ${msg.role==="user"?"justify-end":"justify-start"}`}>
+                      {/* AI avatar */}
+                      {msg.role === "assistant" && (
+                        <div className="w-7 h-7 rounded-full bg-[#1B4F8A] dark:bg-blue-600 flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5">
+                          ⚡
+                        </div>
+                      )}
+                      <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                        msg.role==="user"
+                          ? "bg-[#1B4F8A] dark:bg-blue-600 text-white rounded-br-md"
+                          : "bg-[#F5F8FC] dark:bg-slate-800 text-[#3D5166] dark:text-slate-300 rounded-bl-md border border-[#DDE5EE] dark:border-slate-700"
+                      }`}>
+                        <Markdown text={msg.content} />
                       </div>
+                      {/* User avatar placeholder (right side) */}
+                      {msg.role === "user" && (
+                        <div className="w-7 h-7 rounded-full bg-[#E8ECF0] dark:bg-slate-700 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 text-[#6B7F96] dark:text-slate-400">
+                          👤
+                        </div>
+                      )}
                     </div>
                   ))}
-                  {sending && <div className="flex justify-start"><div className="bg-[#F5F8FC] dark:bg-slate-800 text-[#8FA0B4] dark:text-slate-500 rounded-xl px-4 py-3 text-sm">AI 导师思考中...</div></div>}
+                  {sending && (
+                    <div className="flex gap-2 justify-start">
+                      <div className="w-7 h-7 rounded-full bg-[#1B4F8A] dark:bg-blue-600 flex items-center justify-center text-white text-xs font-bold shrink-0">⚡</div>
+                      <div className="bg-[#F5F8FC] dark:bg-slate-800 border border-[#DDE5EE] dark:border-slate-700 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#8FA0B4] dark:bg-slate-500 animate-bounce" style={{animationDelay:"0ms"}} />
+                        <span className="w-2 h-2 rounded-full bg-[#8FA0B4] dark:bg-slate-500 animate-bounce" style={{animationDelay:"150ms"}} />
+                        <span className="w-2 h-2 rounded-full bg-[#8FA0B4] dark:bg-slate-500 animate-bounce" style={{animationDelay:"300ms"}} />
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <textarea value={input} onChange={(e)=>setInput(e.target.value)}
