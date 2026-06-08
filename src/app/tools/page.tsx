@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import AppLayout from "@/components/AppLayout";
+import AnimatedNumber from "@/components/AnimatedNumber";
 
 /* ── EP Calculator Components ──────────────────────────────────── */
 
@@ -10,6 +11,8 @@ function QTcCalculator() {
   const [rr, setRr] = useState<number>(800);
   const qtc = rr > 0 ? Math.round(qt / Math.sqrt(rr / 1000) * 10) / 10 : 0;
   const status = qtc > 460 ? "⚠️ 延长" : qtc < 340 ? "⬇️ 缩短" : "✅ 正常";
+  const qtcColor = qtc > 460 ? "text-[#9B2C2C] dark:text-red-400" : qtc < 340 ? "text-[#854F0B] dark:text-amber-400" : "text-[#0F6E56] dark:text-emerald-400";
+  const qtcBg = qtc > 460 ? "bg-[#FDE8E8] dark:bg-red-900/20" : qtc < 340 ? "bg-[#FEF3E2] dark:bg-amber-900/20" : "bg-[#E8F4F0] dark:bg-emerald-900/20";
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -22,10 +25,12 @@ function QTcCalculator() {
           <input type="number" value={rr} onChange={(e) => setRr(Number(e.target.value) || 0)} className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-[#C5D3E0] dark:border-slate-600 rounded-lg text-sm text-[#1A2332] dark:text-slate-100 focus:outline-none focus:border-[#1B4F8A] dark:focus:border-blue-400" />
         </div>
       </div>
-      <div className="bg-[#F5F8FC] dark:bg-slate-800 rounded-lg p-4 text-center">
+      <div className={`${qtcBg} rounded-lg p-4 text-center transition-colors duration-500`}>
         <p className="text-xs text-[#6B7F96] dark:text-slate-400">校正 QTc (Bazett)</p>
-        <p className="text-3xl font-bold text-[#1B4F8A] dark:text-blue-400 font-mono">{qtc} ms</p>
-        <p className="text-sm mt-1 text-[#3D5166] dark:text-slate-300">{status}</p>
+        <p className={`text-3xl font-bold font-mono ${qtcColor} transition-colors duration-500`}>
+          <AnimatedNumber value={qtc} decimals={1} suffix=" ms" />
+        </p>
+        <p className={`text-sm mt-1 font-medium ${qtcColor} transition-colors duration-500`}>{status}</p>
         <p className="text-xs text-[#8FA0B4] dark:text-slate-500 mt-1">正常范围：340–460 ms</p>
       </div>
     </div>
@@ -51,6 +56,9 @@ function ChadVascCalculator() {
   };
   const total = Array.from(selected).reduce((sum, k) => sum + (factors.find((f) => f.key === k)?.points || 0), 0);
   const recommendation = total >= 2 ? "推荐抗凝（NOAC 或华法林）" : total === 1 ? "考虑抗凝（可评估出血风险后决定）" : "无需抗凝";
+  const scoreColor = total >= 2 ? "text-[#9B2C2C] dark:text-red-400" : total === 1 ? "text-[#854F0B] dark:text-amber-400" : "text-[#0F6E56] dark:text-emerald-400";
+  const scoreBg = total >= 2 ? "bg-[#FDE8E8] dark:bg-red-900/20" : total === 1 ? "bg-[#FEF3E2] dark:bg-amber-900/20" : "bg-[#E8F4F0] dark:bg-emerald-900/20";
+
   return (
     <div className="space-y-3">
       {factors.map((f) => (
@@ -63,10 +71,12 @@ function ChadVascCalculator() {
           <span className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400">+{f.points}</span>
         </label>
       ))}
-      <div className="bg-[#F5F8FC] dark:bg-slate-800 rounded-lg p-4 text-center">
+      <div className={`${scoreBg} rounded-lg p-4 text-center transition-colors duration-500`}>
         <p className="text-xs text-[#6B7F96] dark:text-slate-400">CHA₂DS₂-VASc 评分</p>
-        <p className="text-3xl font-bold text-[#1B4F8A] dark:text-blue-400 font-mono">{total} 分</p>
-        <p className="text-sm mt-1 text-[#3D5166] dark:text-slate-300">{recommendation}</p>
+        <p className={`text-3xl font-bold font-mono ${scoreColor} transition-colors duration-500`}>
+          <AnimatedNumber value={total} suffix=" 分" />
+        </p>
+        <p className={`text-sm mt-1 font-medium ${scoreColor} transition-colors duration-500`}>{recommendation}</p>
       </div>
     </div>
   );
@@ -91,6 +101,9 @@ function HasBledCalculator() {
   };
   const total = selected.size;
   const risk = total >= 3 ? "🔴 高危 — 谨慎抗凝，需密切监测" : total >= 1 ? "🟡 中危 — 定期评估" : "🟢 低危 — 可安全抗凝";
+  const scoreColor = total >= 3 ? "text-[#9B2C2C] dark:text-red-400" : total >= 1 ? "text-[#854F0B] dark:text-amber-400" : "text-[#0F6E56] dark:text-emerald-400";
+  const scoreBg = total >= 3 ? "bg-[#FDE8E8] dark:bg-red-900/20" : total >= 1 ? "bg-[#FEF3E2] dark:bg-amber-900/20" : "bg-[#E8F4F0] dark:bg-emerald-900/20";
+
   return (
     <div className="space-y-3">
       {factors.map((f) => (
@@ -103,10 +116,12 @@ function HasBledCalculator() {
           <span className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400">+{f.points}</span>
         </label>
       ))}
-      <div className="bg-[#F5F8FC] dark:bg-slate-800 rounded-lg p-4 text-center">
+      <div className={`${scoreBg} rounded-lg p-4 text-center transition-colors duration-500`}>
         <p className="text-xs text-[#6B7F96] dark:text-slate-400">HAS-BLED 评分</p>
-        <p className="text-3xl font-bold text-[#1B4F8A] dark:text-blue-400 font-mono">{total} 分</p>
-        <p className="text-sm mt-1 text-[#3D5166] dark:text-slate-300">{risk}</p>
+        <p className={`text-3xl font-bold font-mono ${scoreColor} transition-colors duration-500`}>
+          <AnimatedNumber value={total} suffix=" 分" />
+        </p>
+        <p className={`text-sm mt-1 font-medium ${scoreColor} transition-colors duration-500`}>{risk}</p>
       </div>
     </div>
   );
@@ -139,25 +154,18 @@ export default function ToolsPage() {
         <p className="text-[#6B7F96] dark:text-slate-400 mb-8">电生理临床常用计算器与参考工具</p>
 
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* QTc */}
           <div className="card">
             <h2 className="text-lg font-semibold text-[#1A2332] dark:text-slate-100 mb-4 font-serif">📐 QTc 计算器</h2>
             <QTcCalculator />
           </div>
-
-          {/* CHA2DS2-VASc */}
           <div className="card">
             <h2 className="text-lg font-semibold text-[#1A2332] dark:text-slate-100 mb-4 font-serif">📋 CHA₂DS₂-VASc 评分</h2>
             <ChadVascCalculator />
           </div>
-
-          {/* HAS-BLED */}
           <div className="card">
             <h2 className="text-lg font-semibold text-[#1A2332] dark:text-slate-100 mb-4 font-serif">🩸 HAS-BLED 评分</h2>
             <HasBledCalculator />
           </div>
-
-          {/* Conduction velocity */}
           <div className="card">
             <h2 className="text-lg font-semibold text-[#1A2332] dark:text-slate-100 mb-4 font-serif">📏 电极间距与电压参考</h2>
             <div className="overflow-x-auto">
@@ -183,7 +191,6 @@ export default function ToolsPage() {
           </div>
         </div>
 
-        {/* Drug Reference */}
         <div className="card mt-6">
           <h2 className="text-lg font-semibold text-[#1A2332] dark:text-slate-100 mb-4 font-serif">💊 常用药物剂量速查</h2>
           <div className="overflow-x-auto">
