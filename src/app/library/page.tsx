@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppLayout from "@/components/AppLayout";
+import { SkeletonPage } from "@/components/Skeleton";
 
 interface Resource { id: string; title: string; category: string; source: string; url: string; summary: string; }
 
@@ -47,8 +48,7 @@ export default function LibraryPage() {
               }`}>{c.label}</button>
           ))}
         </div>
-        {loading ? <div className="text-center py-20 text-[#6B7F96] dark:text-slate-400">整理资料中...</div>
-        : resources.length === 0 ? <div className="text-center py-20 text-[#6B7F96] dark:text-slate-400"><p className="text-lg">暂无资料</p></div>
+        {loading ? <SkeletonPage variant="resource" count={5} /> : resources.length === 0 ? <div className="text-center py-20 text-[#6B7F96] dark:text-slate-400"><p className="text-lg">暂无资料</p></div>
         : <div className="space-y-4">
             {resources.map((r) => (
               <a key={r.id} href={r.url} target="_blank" rel="noopener noreferrer" className="card block hover:border-[#1B4F8A]/30 dark:hover:border-blue-400/30 transition-colors group">

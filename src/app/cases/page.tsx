@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
 import { caseService, authService } from "@/lib/services";
+import { SkeletonPage } from "@/components/Skeleton";
 import { ROUTES } from "@/lib/routes";
 
 interface Case {
@@ -143,8 +144,7 @@ function CaseList() {
           </div>
         </div>
 
-        {loading ? <div className="text-center py-20 text-[#6B7F96] dark:text-slate-400">标测信号中...</div>
-        : filtered.length===0 ? <div className="text-center py-20"><p className="text-[#6B7F96] dark:text-slate-400">{keyword ? "未找到匹配的病例，试试其他关键词" : "暂无匹配的病例"}</p></div>
+        {loading ? <SkeletonPage variant="case" count={6} /> : filtered.length===0 ? <div className="text-center py-20"><p className="text-[#6B7F96] dark:text-slate-400">{keyword ? "未找到匹配的病例，试试其他关键词" : "暂无匹配的病例"}</p></div>
         : <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((c) => (
               <div
@@ -196,5 +196,5 @@ function CaseList() {
 }
 
 export default function CasesPage() {
-  return <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-[#F5F8FC] dark:bg-slate-900"><p className="text-[#6B7F96] dark:text-slate-400">标测信号中...</p></div>}><CaseList /></Suspense>;
+  return <Suspense fallback={<SkeletonPage variant="case" count={6} />}><CaseList /></Suspense>;
 }

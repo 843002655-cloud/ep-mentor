@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
 import { caseService, chatService } from "@/lib/services";
+import { SkeletonBox } from "@/components/Skeleton";
 import type { CaseInput } from "@/lib/services";
 
 interface Case {
@@ -153,7 +154,7 @@ export default function CaseDetailPage() {
 
   useEffect(() => { chatRef.current?.scrollTo(0, chatRef.current.scrollHeight); }, [messages]);
 
-  if (loading) return <AppLayout><div className="max-w-4xl mx-auto px-4 py-12 text-center text-[#6B7F96] dark:text-slate-400">标测信号中...</div></AppLayout>;
+  if (loading) return <AppLayout><div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8"><div className="card mb-4"><div className="flex gap-2 mb-2"><SkeletonBox className="h-5 w-12 rounded-full" /><SkeletonBox className="h-5 w-10 rounded-full" /></div><SkeletonBox className="h-7 w-64 mb-1" /><SkeletonBox className="h-4 w-48" /></div><div className="grid lg:grid-cols-5 gap-4"><div className="lg:col-span-2"><div className="card p-3"><SkeletonBox className="h-4 w-48 mb-3" /><SkeletonBox className="h-60 w-full mb-3" /><div className="flex justify-between"><SkeletonBox className="h-4 w-16" /><SkeletonBox className="h-4 w-10" /><SkeletonBox className="h-4 w-16" /></div></div></div><div className="lg:col-span-3"><div className="card"><div className="h-[400px] sm:h-[450px] space-y-3 mb-4"><SkeletonBox className="h-16 w-3/4 ml-auto" /><SkeletonBox className="h-20 w-3/4" /><SkeletonBox className="h-16 w-2/3" /></div><div className="flex gap-2"><SkeletonBox className="flex-1 h-16 rounded-lg" /><SkeletonBox className="h-10 w-16 rounded-lg" /></div></div></div></div></div></AppLayout>;
   if (!caseData) return <AppLayout><div className="max-w-4xl mx-auto px-4 py-12 text-center text-[#6B7F96] dark:text-slate-400">病例未找到</div></AppLayout>;
 
   const patient = (caseData.content_json?.patient || {}) as Record<string, unknown>;

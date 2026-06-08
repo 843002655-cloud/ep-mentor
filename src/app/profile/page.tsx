@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import AppLayout from "@/components/AppLayout";
 import { progressService, authService } from "@/lib/services";
+import { SkeletonBox } from "@/components/Skeleton";
 import type { ProgressItem } from "@/lib/services";
 import { ROUTES } from "@/lib/routes";
 
@@ -49,7 +50,7 @@ export default function ProfilePage() {
   const role = metadata.role || "";
   const interests = metadata.interests ? metadata.interests.split(",").filter(Boolean) : [];
 
-  if (loading) return <AppLayout><div className="max-w-4xl mx-auto px-4 py-12 text-center text-[#6B7F96] dark:text-slate-400">整理学习数据中...</div></AppLayout>;
+  if (loading) return <AppLayout><div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12"><div className="card mb-6 flex items-center gap-4"><SkeletonBox className="w-16 h-16 rounded-full" /><div className="flex-1"><SkeletonBox className="h-6 w-40 mb-2" /><div className="flex gap-2"><SkeletonBox className="h-5 w-20 rounded-full" /><SkeletonBox className="h-5 w-16 rounded-full" /></div></div></div><div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">{Array.from({length:4}).map((_,i)=><div key={i} className="card text-center"><SkeletonBox className="h-8 w-8 mx-auto mb-2 rounded" /><SkeletonBox className="h-7 w-12 mx-auto mb-1" /><SkeletonBox className="h-4 w-16 mx-auto" /></div>)}</div><SkeletonBox className="h-6 w-32 mb-4" /><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-8">{Array.from({length:6}).map((_,i)=><div key={i} className="card text-center p-4"><SkeletonBox className="h-6 w-6 mx-auto mb-1 rounded" /><SkeletonBox className="h-4 w-16 mx-auto mb-1" /><SkeletonBox className="h-3 w-10 mx-auto" /></div>)}</div></div></AppLayout>;
 
   return (
     <AppLayout>

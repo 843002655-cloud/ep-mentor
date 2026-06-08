@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import AppLayout from "@/components/AppLayout";
 import { progressService, authService } from "@/lib/services";
+import { SkeletonPage } from "@/components/Skeleton";
 import { ROUTES } from "@/lib/routes";
 import type { ProgressItem } from "@/lib/services";
 
@@ -20,7 +21,7 @@ export default function DashboardPage() {
   const stats = progressService.getStats(progress, totalCases);
   const catColors: Record<string, string> = { SVT: "bg-[#EBF2FA] dark:bg-blue-900/30 text-[#1B4F8A] dark:text-blue-300", VT: "bg-[#FDE8E8] dark:bg-red-900/30 text-[#9B2C2C] dark:text-red-300", AF: "bg-[#FEF3E2] dark:bg-amber-900/30 text-[#854F0B] dark:text-amber-300", AFL: "bg-[#EDE9FB] dark:bg-purple-900/30 text-[#4C3D9E] dark:text-purple-300" };
 
-  if (loading) return <AppLayout><div className="max-w-4xl mx-auto px-4 py-12 text-center text-[#6B7F96] dark:text-slate-400">整理学习数据中...</div></AppLayout>;
+  if (loading) return <AppLayout><SkeletonPage variant="stat" /></AppLayout>;
 
   return (
     <AppLayout>

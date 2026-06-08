@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppLayout from "@/components/AppLayout";
+import { SkeletonBox } from "@/components/Skeleton";
 
 interface QuizQuestion { id: string; question: string; options: string[]; correct: number; explanation: string; category: string; }
 
@@ -30,7 +31,7 @@ export default function QuizPage() {
     });
   }, []);
 
-  if (loading) return <AppLayout><div className="max-w-3xl mx-auto px-4 py-12 text-center text-[#6B7F96] dark:text-slate-400">准备题目中...</div></AppLayout>;
+  if (loading) return <AppLayout><div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12"><SkeletonBox className="h-8 w-48 mb-2" /><SkeletonBox className="h-5 w-64 mb-8" /><div className="card"><SkeletonBox className="h-5 w-16 rounded-full mb-4" /><SkeletonBox className="h-6 w-3/4 mb-6" /><div className="space-y-3 mb-6">{Array.from({length:4}).map((_,i)=><SkeletonBox key={i} className="h-12 w-full rounded-lg" />)}</div><SkeletonBox className="h-10 w-24 rounded-lg" /></div></div></AppLayout>;
   if (!questions.length) return <AppLayout><div className="max-w-3xl mx-auto px-4 py-12 text-center text-[#6B7F96] dark:text-slate-400">暂无题目</div></AppLayout>;
 
   const q = questions[currentQ];
