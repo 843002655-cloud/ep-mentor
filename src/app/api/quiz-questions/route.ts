@@ -7,8 +7,7 @@ export async function GET() {
   const { data } = await supabaseAdmin
     .from("quiz_questions")
     .select("*")
-    .order("created_at", { ascending: false })
-    .limit(50);
+    .order("created_at", { ascending: false });
   return NextResponse.json({ questions: data || [] });
 }
 
