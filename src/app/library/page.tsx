@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import AppLayout from "@/components/AppLayout";
 import { SkeletonPage } from "@/components/Skeleton";
+import EmptyState from "@/components/EmptyState";
 
 interface Resource { id: string; title: string; category: string; source: string; url: string; summary: string; }
 
@@ -48,8 +49,7 @@ export default function LibraryPage() {
               }`}>{c.label}</button>
           ))}
         </div>
-        {loading ? <SkeletonPage variant="resource" count={5} /> : resources.length === 0 ? <div className="text-center py-20 text-[#6B7F96] dark:text-slate-400"><p className="text-lg">暂无资料</p></div>
-        : <div className="space-y-4">
+        {loading ? <SkeletonPage variant="resource" count={5} /> : resources.length === 0 ? <EmptyState icon="📖" title="暂无资料" description="学习资料库还是空的，管理员正在整理中" /> : <div className="space-y-4">
             {resources.map((r) => (
               <a key={r.id} href={r.url} target="_blank" rel="noopener noreferrer" className="card block hover:border-[#1B4F8A]/30 dark:hover:border-blue-400/30 transition-colors group">
                 <div className="flex items-start justify-between gap-4">

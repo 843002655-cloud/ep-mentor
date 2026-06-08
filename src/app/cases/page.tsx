@@ -6,6 +6,7 @@ import AppLayout from "@/components/AppLayout";
 import { caseService, authService } from "@/lib/services";
 import { SkeletonPage } from "@/components/Skeleton";
 import CaseCardThumb from "@/components/CaseCardThumb";
+import EmptyState from "@/components/EmptyState";
 import { ROUTES } from "@/lib/routes";
 
 interface Case {
@@ -145,8 +146,7 @@ function CaseList() {
           </div>
         </div>
 
-        {loading ? <SkeletonPage variant="case" count={6} /> : filtered.length===0 ? <div className="text-center py-20"><p className="text-[#6B7F96] dark:text-slate-400">{keyword ? "未找到匹配的病例，试试其他关键词" : "暂无匹配的病例"}</p></div>
-        : <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {loading ? <SkeletonPage variant="case" count={6} /> : filtered.length===0 ? <EmptyState icon="🔍" title={keyword ? "未找到匹配的病例" : "暂无病例"} description={keyword ? "换个关键词试试？" : "病例库还没有内容，请稍后再来"} actionHref={keyword ? "" : ROUTES.CASES} actionLabel={keyword ? "" : "刷新页面"} /> : <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((c) => (
               <div
                 key={c.id} role="link" tabIndex={0}
