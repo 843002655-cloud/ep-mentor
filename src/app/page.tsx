@@ -5,6 +5,7 @@ import Link from "next/link";
 import AppLayout from "@/components/AppLayout";
 import Typewriter from "@/components/Typewriter";
 import CaseCardThumb from "@/components/CaseCardThumb";
+import EcgBackground from "@/components/EcgBackground";
 import { ROUTES } from "@/lib/routes";
 import { caseService } from "@/lib/services";
 
@@ -107,6 +108,7 @@ export default function Home() {
     <AppLayout>
       {/* ═══ Hero ═══ */}
       <section className="relative overflow-hidden bg-white dark:bg-slate-900 border-b border-[#E8ECF0] dark:border-slate-700">
+        <EcgBackground />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left — Copy */}
