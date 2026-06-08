@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import AppLayout from "@/components/AppLayout";
 import Typewriter from "@/components/Typewriter";
+import CaseCardThumb from "@/components/CaseCardThumb";
 import { ROUTES } from "@/lib/routes";
 import { caseService } from "@/lib/services";
 
@@ -94,7 +95,7 @@ const diffBadge: Record<string, string> = {
 // ── Page ───────────────────────────────────────────────────────────
 
 export default function Home() {
-  const [featuredCases, setFeaturedCases] = useState<{ id: string; title: string; difficulty: string; description: string }[]>([]);
+  const [featuredCases, setFeaturedCases] = useState<{ id: string; title: string; category: string; difficulty: string; description: string }[]>([]);
 
   useEffect(() => {
     caseService.getCases().then((cases) => {
@@ -192,10 +193,7 @@ export default function Home() {
                   href={ROUTES.CASE_DETAIL(c.id || "")}
                   className="card group flex flex-col"
                 >
-                  {/* ECG Thumbnail */}
-                  <div className="bg-[#F5F8FC] dark:bg-slate-800 rounded-lg mb-4 h-32 flex items-center justify-center text-4xl select-none">
-                    ⚡
-                  </div>
+                  <CaseCardThumb category={c.category || "SVT"} />
                   <div className="flex items-center gap-2 mb-2">
                     <span className={`badge-category ${diffBadge[c.difficulty] || diffBadge["基础"]}`}>
                       {c.difficulty}

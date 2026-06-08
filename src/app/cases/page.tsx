@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
 import { caseService, authService } from "@/lib/services";
 import { SkeletonPage } from "@/components/Skeleton";
+import CaseCardThumb from "@/components/CaseCardThumb";
 import { ROUTES } from "@/lib/routes";
 
 interface Case {
@@ -153,10 +154,7 @@ function CaseList() {
                 onKeyDown={(e)=>{if(e.key==="Enter")e.currentTarget.click();}}
                 className="card group flex flex-col cursor-pointer"
               >
-                {/* Thumbnail placeholder */}
-                <div className="bg-[#F5F8FC] dark:bg-slate-800 rounded-lg mb-4 h-28 flex items-center justify-center text-3xl select-none shrink-0">
-                  ⚡
-                </div>
+                <CaseCardThumb category={c.category} />
 
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2 mb-3">
