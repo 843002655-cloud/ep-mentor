@@ -245,7 +245,7 @@ export default function CaseDetailPage() {
               <div className="card">
                 <div ref={chatRef} className="h-[400px] sm:h-[450px] overflow-y-auto mb-4 space-y-3 pr-2">
                   {messages.map((msg, i) => (
-                    <div key={i} className={`flex ${msg.role==="user"?"justify-end":"justify-start"}`}>
+                    <div key={i} className={`flex msg-enter ${msg.role==="user"?"justify-end":"justify-start"}`}>
                       <div className={`max-w-[85%] rounded-xl px-4 py-2.5 text-sm ${msg.role==="user"?"bg-[#1B4F8A] dark:bg-blue-600 text-white":"bg-[#F5F8FC] dark:bg-slate-800 text-[#3D5166] dark:text-slate-300"}`}>
                         {msg.content.split("\n").map((l,j)=><span key={j}>{l}{j<msg.content.split("\n").length-1&&<br/>}</span>)}
                       </div>
