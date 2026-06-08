@@ -46,10 +46,14 @@ export default function HeartModel({ className = "" }: Props) {
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
-    // Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    // Renderer — use lower pixel ratio on mobile
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
+    const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, alpha: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2));
+    renderer.domElement.style.display = "block";
+    renderer.domElement.style.width = "100%";
+    renderer.domElement.style.height = "100%";
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
@@ -197,20 +201,24 @@ export default function HeartModel({ className = "" }: Props) {
     };
     animate();
 
-    // Resize
-    const onResize = () => {
-      if (!container || !camera || !renderer) return;
-      camera.aspect = container.clientWidth / container.clientHeight;
+    // ResizeObserver for responsive canvas
+    const resizeObserver = new ResizeObserver(() => {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      if (w === 0 || h === 0) return;
+      camera.aspect = w / h;
       camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
-    };
-    window.addEventListener("resize", onResize);
+      renderer.setSize(w, h);
+    });
+    resizeObserver.observe(container);
 
     return () => {
       cancelAnimationFrame(animIdRef.current);
-      window.removeEventListener("resize", onResize);
+      resizeObserver.disconnect();
       renderer.dispose();
-      container.removeChild(renderer.domElement);
+      if (renderer.domElement.parentNode) {
+        container.removeChild(renderer.domElement);
+      }
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -260,7 +268,8 @@ export default function HeartModel({ className = "" }: Props) {
       {/* 3D Canvas */}
       <div
         ref={containerRef}
-        className="relative aspect-[4/3] overflow-hidden cursor-grab active:cursor-grabbing touch-none select-none"
+        className="relative w-full overflow-hidden cursor-grab active:cursor-grabbing select-none"
+        style={{ aspectRatio: "4/3", touchAction: "none" }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
