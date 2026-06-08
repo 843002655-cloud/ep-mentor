@@ -81,16 +81,17 @@ export default function AdminGeneratePage() {
 
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h1 className="text-3xl font-bold text-[#1A2332] mb-2 font-serif">AI 生成案例</h1>
-        <div className="flex gap-2 mb-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#1A2332] dark:text-slate-100 mb-2 font-serif">AI 生成案例</h1>
+        <p className="text-sm text-[#6B7F96] dark:text-slate-400 mb-4">通过 AI 自动生成电生理教学病例</p>
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
           {[{k:"generate",l:"🤖 AI生成"},{k:"pdf",l:"📄 PDF导入"},{k:"images",l:"📷 图片+文字"}].map(t=>(
-            <button key={t.k} onClick={()=>setTab(t.k as Tab)} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${tab===t.k?"bg-[#1B4F8A] text-white":"bg-white border border-[#C5D3E0] text-[#4B6080]"}`}>{t.l}</button>
+            <button key={t.k} onClick={()=>setTab(t.k as Tab)} className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap shrink-0 transition-colors ${tab===t.k?"bg-[#1B4F8A] dark:bg-blue-600 text-white":"bg-white dark:bg-slate-800 border border-[#C5D3E0] dark:border-slate-600 text-[#4B6080] dark:text-slate-300"}`}>{t.l}</button>
           ))}
         </div>
 
         {tab==="generate"&&(<div className="card mb-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <div><label className="block text-xs text-[#3D5166] mb-1">分类</label><select value={cat} onChange={e=>setCat(e.target.value)} className={selClass}>{["SVT","VT","AF","AFL"].map(o=><option key={o}>{o}</option>)}</select></div>
             <div><label className="block text-xs text-[#3D5166] mb-1">难度</label><select value={diff} onChange={e=>setDiff(e.target.value)} className={selClass}>{["基础","进阶","高级"].map(o=><option key={o}>{o}</option>)}</select></div>
             <div><label className="block text-xs text-[#3D5166] mb-1">数量</label><input type="number" min={1} max={5} value={cnt} onChange={e=>setCnt(parseInt(e.target.value)||1)} className={selClass}/></div>

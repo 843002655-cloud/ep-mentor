@@ -37,7 +37,7 @@ export default function AdminCasesPage() {
   return (
     <AppLayout>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex items-center justify-between mb-8"><div><h1 className="text-3xl font-bold text-[#1A2332] dark:text-slate-100 mb-2 font-serif">病例管理</h1><p className="text-[#6B7F96] dark:text-slate-400">增删改查病例</p></div><div className="flex items-center gap-2"><a href="/admin/generate" className="btn-primary text-sm">🤖 AI 生成</a><button onClick={handleNew} className="btn-secondary">+ 新建病例</button></div></div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8"><div><h1 className="text-2xl sm:text-3xl font-bold text-[#1A2332] dark:text-slate-100 mb-1 sm:mb-2 font-serif">病例管理</h1><p className="text-[#6B7F96] dark:text-slate-400 text-sm">增删改查病例</p></div><div className="flex items-center gap-2"><a href="/admin/generate" className="btn-primary text-sm px-4">🤖 AI 生成</a><button onClick={handleNew} className="btn-secondary text-sm px-3">+ 新建</button></div></div>
         {(isNew || editingId) && (
           <div className="card mb-8 border border-[#1B4F8A]/30">
             <h2 className="text-xl font-semibold text-[#1A2332] dark:text-slate-100 mb-4">{isNew ? "新建病例" : "编辑病例"}</h2>
@@ -57,12 +57,18 @@ export default function AdminCasesPage() {
         )}
         {loading ? <SkeletonPage variant="list" count={5} /> : (
           <div className="space-y-3">{cases.map((c) => (
-            <div key={c.id} className="card flex flex-wrap items-center justify-between gap-3 py-4">
-              <div className="flex items-center gap-3"><span className={`badge-category ${catColors[c.category]||""}`}>{c.category}</span><div><div className="text-[#1A2332] dark:text-slate-100 font-medium">{c.title}</div><div className="text-xs text-[#8FA0B4] dark:text-slate-500">{c.difficulty} | {c.is_published ? "🟢 已发布" : "⚪ 未发布"}</div></div></div>
-              <div className="flex gap-2">
-                <button onClick={()=>handleToggle(c)} className="text-xs px-3 py-1 border border-[#C5D3E0] dark:border-slate-600 rounded text-[#4B6080] dark:text-slate-300 hover:text-[#1B4F8A] dark:hover:text-blue-400 hover:border-[#1B4F8A] dark:hover:border-blue-400">{c.is_published?"下架":"发布"}</button>
-                <button onClick={()=>handleEdit(c)} className="text-xs px-3 py-1 border border-[#1B4F8A]/50 dark:border-blue-400/50 rounded text-[#1B4F8A] dark:text-blue-400 hover:bg-[#EBF2FA] dark:hover:bg-slate-700">编辑</button>
-                <button onClick={()=>handleDelete(c.id)} className="text-xs px-3 py-1 border border-[#9B2C2C]/50 dark:border-red-400/50 rounded text-[#9B2C2C] dark:text-red-400 hover:bg-[#FDE8E8] dark:hover:bg-red-900/30">删除</button>
+            <div key={c.id} className="card flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4">
+              <div className="flex items-start sm:items-center gap-3">
+                <span className={`badge-category shrink-0 mt-0.5 sm:mt-0 ${catColors[c.category]||""}`}>{c.category}</span>
+                <div className="min-w-0">
+                  <div className="text-[#1A2332] dark:text-slate-100 font-medium text-sm sm:text-base truncate">{c.title}</div>
+                  <div className="text-xs text-[#8FA0B4] dark:text-slate-500">{c.difficulty} | {c.is_published ? "🟢 已发布" : "⚪ 未发布"}</div>
+                </div>
+              </div>
+              <div className="flex gap-2 ml-0 sm:ml-auto shrink-0">
+                <button onClick={()=>handleToggle(c)} className="text-xs px-2.5 py-1.5 border border-[#C5D3E0] dark:border-slate-600 rounded text-[#4B6080] dark:text-slate-300 hover:text-[#1B4F8A] dark:hover:text-blue-400 hover:border-[#1B4F8A] dark:hover:border-blue-400 min-h-0">{c.is_published?"下架":"发布"}</button>
+                <button onClick={()=>handleEdit(c)} className="text-xs px-2.5 py-1.5 border border-[#1B4F8A]/50 dark:border-blue-400/50 rounded text-[#1B4F8A] dark:text-blue-400 hover:bg-[#EBF2FA] dark:hover:bg-slate-700 min-h-0">编辑</button>
+                <button onClick={()=>handleDelete(c.id)} className="text-xs px-2.5 py-1.5 border border-[#9B2C2C]/50 dark:border-red-400/50 rounded text-[#9B2C2C] dark:text-red-400 hover:bg-[#FDE8E8] dark:hover:bg-red-900/30 min-h-0">删除</button>
               </div>
             </div>
           ))}</div>
