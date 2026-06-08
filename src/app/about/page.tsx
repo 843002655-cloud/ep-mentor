@@ -4,8 +4,8 @@ export default function AboutPage() {
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto px-4 py-16">
-        <h1 className="text-3xl font-bold text-[#1A2332] mb-6 font-serif">关于 EP Mentor</h1>
-        <div className="prose text-[#3D5166] leading-relaxed space-y-4">
+        <h1 className="text-3xl font-bold text-[#1A2332] dark:text-slate-100 mb-6 font-serif">关于 EP Mentor</h1>
+        <div className="prose text-[#3D5166] dark:text-slate-300 leading-relaxed space-y-4">
           <p>
             EP Mentor 是一个面向心脏电生理医生的 AI 教学平台，由一群热爱电生理的工程师和临床医生共同打造。
           </p>
@@ -16,9 +16,9 @@ export default function AboutPage() {
           <p>
             平台所有病例均来自真实临床场景（已脱敏），AI 模型由 DeepSeek 驱动，数据库与认证服务由 Supabase 提供。
           </p>
-          <div className="bg-[#F5F8FC] border border-[#DDE5EE] rounded-xl p-6 mt-8">
-            <h2 className="text-lg font-semibold text-[#1A2332] mb-2 font-serif">联系我们</h2>
-            <p className="text-sm">
+          <div className="bg-[#F5F8FC] dark:bg-slate-800 border border-[#DDE5EE] dark:border-slate-700 rounded-xl p-6 mt-8">
+            <h2 className="text-lg font-semibold text-[#1A2332] dark:text-slate-100 mb-2 font-serif">联系我们</h2>
+            <p className="text-sm dark:text-slate-400">
               邮箱：843002655@qq.com<br />
               微信小程序即将上线，敬请期待。
             </p>

@@ -24,7 +24,7 @@ const subspecialties = [
 ];
 
 const inputClass =
-  "w-full px-4 py-2.5 bg-white border border-[#C5D3E0] rounded-lg text-[#1A2332] placeholder-[#8FA0B4] focus:outline-none focus:border-[#1B4F8A] transition-colors";
+  "w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-[#C5D3E0] dark:border-slate-600 rounded-lg text-[#1A2332] dark:text-slate-100 placeholder-[#8FA0B4] dark:placeholder-slate-500 focus:outline-none focus:border-[#1B4F8A] dark:focus:border-blue-400 transition-colors";
 
 function AuthForm() {
   const searchParams = useSearchParams();
@@ -79,20 +79,20 @@ function AuthForm() {
     <AppLayout>
       <div className="max-w-md mx-auto px-4 py-16 sm:py-24">
         <div className="card">
-          <h1 className="text-2xl font-bold text-[#1A2332] text-center mb-2 font-serif">
+          <h1 className="text-2xl font-bold text-[#1A2332] dark:text-slate-100 text-center mb-2 font-serif">
             {isRegister ? "注册" : "登录"}
           </h1>
-          <p className="text-sm text-[#6B7F96] text-center mb-6">
+          <p className="text-sm text-[#6B7F96] dark:text-slate-400 text-center mb-6">
             {isRegister ? "选择你的身份，开始个性化学习" : "欢迎回到 EP Mentor"}
           </p>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[#3D5166] mb-1">邮箱</label>
+              <label className="block text-sm font-medium text-[#3D5166] dark:text-slate-300 mb-1">邮箱</label>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#3D5166] mb-1">密码</label>
+              <label className="block text-sm font-medium text-[#3D5166] dark:text-slate-300 mb-1">密码</label>
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} placeholder="至少 6 位" />
             </div>
 
@@ -100,13 +100,13 @@ function AuthForm() {
             {isRegister && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-[#3D5166] mb-2">身份</label>
+                  <label className="block text-sm font-medium text-[#3D5166] dark:text-slate-300 mb-2">身份</label>
                   <div className="grid grid-cols-1 gap-1.5">
                     {roles.map((r) => (
-                      <label key={r.value} className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors text-sm ${role === r.value ? "border-[#1B4F8A] bg-[#EBF2FA] text-[#1B4F8A]" : "border-[#C5D3E0] text-[#3D5166] hover:border-[#1B4F8A]"}`}>
+                      <label key={r.value} className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors text-sm ${role === r.value ? "border-[#1B4F8A] dark:border-blue-400 bg-[#EBF2FA] dark:bg-slate-700 text-[#1B4F8A] dark:text-blue-400" : "border-[#C5D3E0] dark:border-slate-600 text-[#3D5166] dark:text-slate-300 hover:border-[#1B4F8A] dark:hover:border-blue-400"}`}>
                         <input type="radio" name="role" value={r.value} checked={role === r.value} onChange={() => setRole(r.value)} className="sr-only" />
-                        <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${role === r.value ? "border-[#1B4F8A]" : "border-[#C5D3E0]"}`}>
-                          {role === r.value && <span className="w-2 h-2 rounded-full bg-[#1B4F8A]" />}
+                        <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${role === r.value ? "border-[#1B4F8A] dark:border-blue-400" : "border-[#C5D3E0] dark:border-slate-600"}`}>
+                          {role === r.value && <span className="w-2 h-2 rounded-full bg-[#1B4F8A] dark:bg-blue-400" />}
                         </span>
                         {r.label}
                       </label>
@@ -115,14 +115,14 @@ function AuthForm() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#3D5166] mb-2">感兴趣的亚专业（可多选）</label>
+                  <label className="block text-sm font-medium text-[#3D5166] dark:text-slate-300 mb-2">感兴趣的亚专业（可多选）</label>
                   <div className="flex flex-wrap gap-2">
                     {subspecialties.map((s) => (
                       <button
                         key={s.key}
                         type="button"
                         onClick={() => toggleInterest(s.key)}
-                        className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${interests.includes(s.key) ? "border-[#1B4F8A] bg-[#EBF2FA] text-[#1B4F8A]" : "border-[#C5D3E0] text-[#6B7F96] hover:border-[#1B4F8A]"}`}
+                        className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${interests.includes(s.key) ? "border-[#1B4F8A] dark:border-blue-400 bg-[#EBF2FA] dark:bg-slate-700 text-[#1B4F8A] dark:text-blue-400" : "border-[#C5D3E0] dark:border-slate-600 text-[#6B7F96] dark:text-slate-400 hover:border-[#1B4F8A] dark:hover:border-blue-400"}`}
                       >
                         {interests.includes(s.key) && "✓ "}{s.label}
                       </button>
@@ -133,7 +133,7 @@ function AuthForm() {
             )}
 
             {message && (
-              <div className={`text-sm p-3 rounded-lg ${message.includes("成功") ? "bg-[#E8F4F0] text-[#0F6E56] border border-[#0F6E56]/20" : "bg-[#FDE8E8] text-[#9B2C2C] border border-[#9B2C2C]/20"}`}>
+              <div className={`text-sm p-3 rounded-lg ${message.includes("成功") ? "bg-[#E8F4F0] dark:bg-emerald-900/30 text-[#0F6E56] dark:text-emerald-300 border border-[#0F6E56]/20 dark:border-emerald-400/20" : "bg-[#FDE8E8] dark:bg-red-900/30 text-[#9B2C2C] dark:text-red-300 border border-[#9B2C2C]/20 dark:border-red-400/20"}`}>
                 {message}
               </div>
             )}
@@ -144,7 +144,7 @@ function AuthForm() {
           </div>
 
           <div className="mt-6 text-center">
-            <button onClick={() => { setIsRegister(!isRegister); setMessage(""); }} className="text-sm text-[#1B4F8A] hover:text-[#154070] hover:underline transition-colors">
+            <button onClick={() => { setIsRegister(!isRegister); setMessage(""); }} className="text-sm text-[#1B4F8A] dark:text-blue-400 hover:text-[#154070] dark:hover:text-blue-300 hover:underline transition-colors">
               {isRegister ? "已有账号？去登录" : "没有账号？去注册"}
             </button>
           </div>
@@ -156,7 +156,7 @@ function AuthForm() {
 
 export default function AuthPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-[#F5F8FC]"><p className="text-[#6B7F96]">准备中...</p></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-[#F5F8FC] dark:bg-slate-900"><p className="text-[#6B7F96] dark:text-slate-400">准备中...</p></div>}>
       <AuthForm />
     </Suspense>
   );

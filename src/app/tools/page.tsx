@@ -14,19 +14,19 @@ function QTcCalculator() {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs text-[#6B7F96] mb-1">QT 间期 (ms)</label>
-          <input type="number" value={qt} onChange={(e) => setQt(Number(e.target.value) || 0)} className="w-full px-3 py-2 bg-white border border-[#C5D3E0] rounded-lg text-sm text-[#1A2332] focus:outline-none focus:border-[#1B4F8A]" />
+          <label className="block text-xs text-[#6B7F96] dark:text-slate-400 mb-1">QT 间期 (ms)</label>
+          <input type="number" value={qt} onChange={(e) => setQt(Number(e.target.value) || 0)} className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-[#C5D3E0] dark:border-slate-600 rounded-lg text-sm text-[#1A2332] dark:text-slate-100 focus:outline-none focus:border-[#1B4F8A] dark:focus:border-blue-400" />
         </div>
         <div>
-          <label className="block text-xs text-[#6B7F96] mb-1">RR 间期 (ms)</label>
-          <input type="number" value={rr} onChange={(e) => setRr(Number(e.target.value) || 0)} className="w-full px-3 py-2 bg-white border border-[#C5D3E0] rounded-lg text-sm text-[#1A2332] focus:outline-none focus:border-[#1B4F8A]" />
+          <label className="block text-xs text-[#6B7F96] dark:text-slate-400 mb-1">RR 间期 (ms)</label>
+          <input type="number" value={rr} onChange={(e) => setRr(Number(e.target.value) || 0)} className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-[#C5D3E0] dark:border-slate-600 rounded-lg text-sm text-[#1A2332] dark:text-slate-100 focus:outline-none focus:border-[#1B4F8A] dark:focus:border-blue-400" />
         </div>
       </div>
-      <div className="bg-[#F5F8FC] rounded-lg p-4 text-center">
-        <p className="text-xs text-[#6B7F96]">校正 QTc (Bazett)</p>
-        <p className="text-3xl font-bold text-[#1B4F8A] font-mono">{qtc} ms</p>
-        <p className="text-sm mt-1">{status}</p>
-        <p className="text-xs text-[#8FA0B4] mt-1">正常范围：340–460 ms</p>
+      <div className="bg-[#F5F8FC] dark:bg-slate-800 rounded-lg p-4 text-center">
+        <p className="text-xs text-[#6B7F96] dark:text-slate-400">校正 QTc (Bazett)</p>
+        <p className="text-3xl font-bold text-[#1B4F8A] dark:text-blue-400 font-mono">{qtc} ms</p>
+        <p className="text-sm mt-1 text-[#3D5166] dark:text-slate-300">{status}</p>
+        <p className="text-xs text-[#8FA0B4] dark:text-slate-500 mt-1">正常范围：340–460 ms</p>
       </div>
     </div>
   );
@@ -54,19 +54,19 @@ function ChadVascCalculator() {
   return (
     <div className="space-y-3">
       {factors.map((f) => (
-        <label key={f.key} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${selected.has(f.key) ? "border-[#1B4F8A] bg-[#EBF2FA]" : "border-[#C5D3E0] hover:border-[#1B4F8A]"}`}>
+        <label key={f.key} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${selected.has(f.key) ? "border-[#1B4F8A] dark:border-blue-400 bg-[#EBF2FA] dark:bg-slate-700" : "border-[#C5D3E0] dark:border-slate-600 hover:border-[#1B4F8A] dark:hover:border-blue-400"}`}>
           <input type="checkbox" checked={selected.has(f.key)} onChange={() => toggle(f.key)} className="sr-only" />
-          <span className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${selected.has(f.key) ? "border-[#1B4F8A] bg-[#1B4F8A]" : "border-[#C5D3E0]"}`}>
+          <span className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${selected.has(f.key) ? "border-[#1B4F8A] dark:border-blue-400 bg-[#1B4F8A] dark:bg-blue-600" : "border-[#C5D3E0] dark:border-slate-600"}`}>
             {selected.has(f.key) && <span className="text-white text-xs">✓</span>}
           </span>
-          <span className="text-sm text-[#3D5166] flex-1">{f.label}</span>
-          <span className="text-xs font-bold text-[#1B4F8A]">+{f.points}</span>
+          <span className="text-sm text-[#3D5166] dark:text-slate-300 flex-1">{f.label}</span>
+          <span className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400">+{f.points}</span>
         </label>
       ))}
-      <div className="bg-[#F5F8FC] rounded-lg p-4 text-center">
-        <p className="text-xs text-[#6B7F96]">CHA₂DS₂-VASc 评分</p>
-        <p className="text-3xl font-bold text-[#1B4F8A] font-mono">{total} 分</p>
-        <p className="text-sm mt-1">{recommendation}</p>
+      <div className="bg-[#F5F8FC] dark:bg-slate-800 rounded-lg p-4 text-center">
+        <p className="text-xs text-[#6B7F96] dark:text-slate-400">CHA₂DS₂-VASc 评分</p>
+        <p className="text-3xl font-bold text-[#1B4F8A] dark:text-blue-400 font-mono">{total} 分</p>
+        <p className="text-sm mt-1 text-[#3D5166] dark:text-slate-300">{recommendation}</p>
       </div>
     </div>
   );
@@ -94,19 +94,19 @@ function HasBledCalculator() {
   return (
     <div className="space-y-3">
       {factors.map((f) => (
-        <label key={f.key} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${selected.has(f.key) ? "border-[#1B4F8A] bg-[#EBF2FA]" : "border-[#C5D3E0] hover:border-[#1B4F8A]"}`}>
+        <label key={f.key} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${selected.has(f.key) ? "border-[#1B4F8A] dark:border-blue-400 bg-[#EBF2FA] dark:bg-slate-700" : "border-[#C5D3E0] dark:border-slate-600 hover:border-[#1B4F8A] dark:hover:border-blue-400"}`}>
           <input type="checkbox" checked={selected.has(f.key)} onChange={() => toggle(f.key)} className="sr-only" />
-          <span className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${selected.has(f.key) ? "border-[#1B4F8A] bg-[#1B4F8A]" : "border-[#C5D3E0]"}`}>
+          <span className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${selected.has(f.key) ? "border-[#1B4F8A] dark:border-blue-400 bg-[#1B4F8A] dark:bg-blue-600" : "border-[#C5D3E0] dark:border-slate-600"}`}>
             {selected.has(f.key) && <span className="text-white text-xs">✓</span>}
           </span>
-          <span className="text-sm text-[#3D5166] flex-1">{f.label}</span>
-          <span className="text-xs font-bold text-[#1B4F8A]">+{f.points}</span>
+          <span className="text-sm text-[#3D5166] dark:text-slate-300 flex-1">{f.label}</span>
+          <span className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400">+{f.points}</span>
         </label>
       ))}
-      <div className="bg-[#F5F8FC] rounded-lg p-4 text-center">
-        <p className="text-xs text-[#6B7F96]">HAS-BLED 评分</p>
-        <p className="text-3xl font-bold text-[#1B4F8A] font-mono">{total} 分</p>
-        <p className="text-sm mt-1">{risk}</p>
+      <div className="bg-[#F5F8FC] dark:bg-slate-800 rounded-lg p-4 text-center">
+        <p className="text-xs text-[#6B7F96] dark:text-slate-400">HAS-BLED 评分</p>
+        <p className="text-3xl font-bold text-[#1B4F8A] dark:text-blue-400 font-mono">{total} 分</p>
+        <p className="text-sm mt-1 text-[#3D5166] dark:text-slate-300">{risk}</p>
       </div>
     </div>
   );
@@ -135,46 +135,46 @@ export default function ToolsPage() {
   return (
     <AppLayout>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <h1 className="text-3xl font-bold text-[#1A2332] mb-2 font-serif">EP 工具库</h1>
-        <p className="text-[#6B7F96] mb-8">电生理临床常用计算器与参考工具</p>
+        <h1 className="text-3xl font-bold text-[#1A2332] dark:text-slate-100 mb-2 font-serif">EP 工具库</h1>
+        <p className="text-[#6B7F96] dark:text-slate-400 mb-8">电生理临床常用计算器与参考工具</p>
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* QTc */}
           <div className="card">
-            <h2 className="text-lg font-semibold text-[#1A2332] mb-4 font-serif">📐 QTc 计算器</h2>
+            <h2 className="text-lg font-semibold text-[#1A2332] dark:text-slate-100 mb-4 font-serif">📐 QTc 计算器</h2>
             <QTcCalculator />
           </div>
 
           {/* CHA2DS2-VASc */}
           <div className="card">
-            <h2 className="text-lg font-semibold text-[#1A2332] mb-4 font-serif">📋 CHA₂DS₂-VASc 评分</h2>
+            <h2 className="text-lg font-semibold text-[#1A2332] dark:text-slate-100 mb-4 font-serif">📋 CHA₂DS₂-VASc 评分</h2>
             <ChadVascCalculator />
           </div>
 
           {/* HAS-BLED */}
           <div className="card">
-            <h2 className="text-lg font-semibold text-[#1A2332] mb-4 font-serif">🩸 HAS-BLED 评分</h2>
+            <h2 className="text-lg font-semibold text-[#1A2332] dark:text-slate-100 mb-4 font-serif">🩸 HAS-BLED 评分</h2>
             <HasBledCalculator />
           </div>
 
           {/* Conduction velocity */}
           <div className="card">
-            <h2 className="text-lg font-semibold text-[#1A2332] mb-4 font-serif">📏 电极间距与电压参考</h2>
+            <h2 className="text-lg font-semibold text-[#1A2332] dark:text-slate-100 mb-4 font-serif">📏 电极间距与电压参考</h2>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left border-b border-[#E8ECF0]">
-                    <th className="py-2 text-[#6B7F96] font-medium">电极间距</th>
-                    <th className="py-2 text-[#6B7F96] font-medium">记录电压</th>
-                    <th className="py-2 text-[#6B7F96] font-medium">典型用途</th>
+                  <tr className="text-left border-b border-[#E8ECF0] dark:border-slate-700">
+                    <th className="py-2 text-[#6B7F96] dark:text-slate-400 font-medium">电极间距</th>
+                    <th className="py-2 text-[#6B7F96] dark:text-slate-400 font-medium">记录电压</th>
+                    <th className="py-2 text-[#6B7F96] dark:text-slate-400 font-medium">典型用途</th>
                   </tr>
                 </thead>
                 <tbody>
                   {electrodeRef.map((r, i) => (
-                    <tr key={i} className="border-b border-[#E8ECF0]">
-                      <td className="py-2 text-[#3D5166] font-mono">{r.spacing}</td>
-                      <td className="py-2 text-[#3D5166] font-mono">{r.voltage}</td>
-                      <td className="py-2 text-[#6B7F96]">{r.usage}</td>
+                    <tr key={i} className="border-b border-[#E8ECF0] dark:border-slate-700">
+                      <td className="py-2 text-[#3D5166] dark:text-slate-300 font-mono">{r.spacing}</td>
+                      <td className="py-2 text-[#3D5166] dark:text-slate-300 font-mono">{r.voltage}</td>
+                      <td className="py-2 text-[#6B7F96] dark:text-slate-400">{r.usage}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -185,28 +185,28 @@ export default function ToolsPage() {
 
         {/* Drug Reference */}
         <div className="card mt-6">
-          <h2 className="text-lg font-semibold text-[#1A2332] mb-4 font-serif">💊 常用药物剂量速查</h2>
+          <h2 className="text-lg font-semibold text-[#1A2332] dark:text-slate-100 mb-4 font-serif">💊 常用药物剂量速查</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left border-b border-[#E8ECF0]">
-                  <th className="py-2 text-[#6B7F96] font-medium">药物</th>
-                  <th className="py-2 text-[#6B7F96] font-medium">常用剂量</th>
-                  <th className="py-2 text-[#6B7F96] font-medium">注意事项</th>
+                <tr className="text-left border-b border-[#E8ECF0] dark:border-slate-700">
+                  <th className="py-2 text-[#6B7F96] dark:text-slate-400 font-medium">药物</th>
+                  <th className="py-2 text-[#6B7F96] dark:text-slate-400 font-medium">常用剂量</th>
+                  <th className="py-2 text-[#6B7F96] dark:text-slate-400 font-medium">注意事项</th>
                 </tr>
               </thead>
               <tbody>
                 {drugRef.map((d, i) => (
-                  <tr key={i} className="border-b border-[#E8ECF0]">
-                    <td className="py-2 text-[#3D5166] font-medium">{d.drug}</td>
-                    <td className="py-2 text-[#3D5166] font-mono">{d.dose}</td>
-                    <td className="py-2 text-[#6B7F96] text-xs">{d.note}</td>
+                  <tr key={i} className="border-b border-[#E8ECF0] dark:border-slate-700">
+                    <td className="py-2 text-[#3D5166] dark:text-slate-300 font-medium">{d.drug}</td>
+                    <td className="py-2 text-[#3D5166] dark:text-slate-300 font-mono">{d.dose}</td>
+                    <td className="py-2 text-[#6B7F96] dark:text-slate-400 text-xs">{d.note}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-[#8FA0B4] mt-4">⚠️ 本表仅供快速参考，临床决策请以最新指南和药品说明书为准。</p>
+          <p className="text-xs text-[#8FA0B4] dark:text-slate-500 mt-4">⚠️ 本表仅供快速参考，临床决策请以最新指南和药品说明书为准。</p>
         </div>
       </div>
     </AppLayout>
