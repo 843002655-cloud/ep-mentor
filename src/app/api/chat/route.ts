@@ -321,7 +321,7 @@ export async function POST(request: NextRequest) {
     if (stream) {
       const streamResponse = await deepseek.chat.completions.create({
         model: MODEL,
-        max_tokens: 500,
+        max_tokens: 2000,
         temperature: 0.7,
         stream: true,
         messages: [

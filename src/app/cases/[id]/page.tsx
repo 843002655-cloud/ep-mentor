@@ -124,6 +124,23 @@ export default function CaseDetailPage() {
     }]);
   };
 
+  const handleHint = () => {
+    if (sending || !caseData) return;
+    setInput("请给我一些提示");
+  };
+
+  const handleRestart = () => {
+    if (figures.length === 0) return;
+    const f = figures[0];
+    setFigIdx(0);
+    setMessages([{
+      role: "assistant",
+      content: `欢迎来到电生理导管室。\n\n今天我们一起分析：**${caseData!.title}**\n\n${figures.length > 0 ? `我们将按步骤分析，共 ${figures.length} 个关键发现。` : ""}\n\n📷 **${f.figure_number}: ${f.title}**\n\n${f.description ? "📖 " + f.description + "\n\n" : ""}🎯 ${f.teaching_points}\n\n${f.key_question}`,
+    }]);
+    setAllDone(false);
+    setStreamingText(null);
+  };
+
   const handleNextFigure = () => {
     const next = figIdx + 1;
     if (next >= figures.length) {
@@ -306,9 +323,20 @@ export default function CaseDetailPage() {
                 <div className="flex gap-2">
                   <textarea value={input} onChange={(e)=>setInput(e.target.value)}
                     onKeyDown={(e)=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();handleSend();}}}
-                    placeholder="输入你的分析..." rows={2} disabled={sending}
+                    placeholder="输入你的分析..." rows={4} disabled={sending}
                     className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-[#C5D3E0] dark:border-slate-600 rounded-lg text-sm text-[#1A2332] dark:text-slate-100 placeholder-[#8FA0B4] dark:placeholder-slate-500 focus:outline-none focus:border-[#1B4F8A] dark:focus:border-blue-400 resize-none" />
                   <button onClick={handleSend} disabled={sending||!input.trim()} className="btn-primary self-end text-sm px-4">发送</button>
+                </div>
+                {/* Quick action buttons */}
+                <div className="flex items-center gap-2 mt-2">
+                  <button onClick={handleHint} disabled={sending}
+                    className="text-xs px-3 py-1.5 bg-[#FEF3E2] dark:bg-amber-900/20 text-[#854F0B] dark:text-amber-300 rounded-full hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors disabled:opacity-40">
+                    💡 给我提示
+                  </button>
+                  <button onClick={handleRestart} disabled={sending}
+                    className="text-xs px-3 py-1.5 bg-[#F5F8FC] dark:bg-slate-800 text-[#6B7F96] dark:text-slate-400 rounded-full hover:bg-[#E8ECF0] dark:hover:bg-slate-700 transition-colors disabled:opacity-40">
+                    🔄 重新开始
+                  </button>
                 </div>
                 {/* Action buttons */}
                 {figures.length > 0 && figIdx < figures.length - 1 && (
