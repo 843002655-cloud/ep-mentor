@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { flushSync } from "react-dom";
 import { useParams } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
 import { caseService, chatService } from "@/lib/services";
@@ -152,7 +153,9 @@ export default function CaseDetailPage() {
         [...messages, userMessage].slice(-10), ctx, caseId,
         (chunk: string) => {
           fullText += chunk;
-          setStreamingText(fullText);
+          flushSync(() => {
+            setStreamingText(fullText);
+          });
         }
       );
       const finished = fullText || rawReply;

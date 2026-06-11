@@ -367,6 +367,7 @@ export async function POST(request: NextRequest) {
           "Content-Type": "text/plain; charset=utf-8",
           "Cache-Control": "no-cache",
           Connection: "keep-alive",
+          "X-Accel-Buffering": "no",
         },
       });
     }
