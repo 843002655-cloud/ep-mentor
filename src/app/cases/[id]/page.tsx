@@ -41,6 +41,7 @@ export default function CaseDetailPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [streamingText, setStreamingText] = useState<string | null>(null);
   const [allDone, setAllDone] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
 
@@ -146,18 +147,25 @@ export default function CaseDetailPage() {
         contentJson: caseData.content_json,
         currentFigure: figures[figIdx] as unknown as Record<string, unknown> || undefined,
       };
+      let fullText = "";
       const rawReply = await chatService.sendMessageStream(
-        [...messages, userMessage].slice(-10), ctx, caseId, () => {}
+        [...messages, userMessage].slice(-10), ctx, caseId,
+        (chunk: string) => {
+          fullText += chunk;
+          setStreamingText(fullText);
+        }
       );
-      let display = rawReply;
-      try { const p = JSON.parse(rawReply); display = (p.content || rawReply) + (p.hint ? "\n\n💡 " + p.hint : ""); } catch {}
+      const finished = fullText || rawReply;
+      let display = finished;
+      try { const p = JSON.parse(finished); display = (p.content || finished) + (p.hint ? "\n\n💡 " + p.hint : ""); } catch {}
       setMessages((p) => [...p, { role: "assistant", content: display }]);
+      setStreamingText(null);
     } catch (err: unknown) {
       setMessages((p) => [...p, { role: "assistant", content: "抱歉：" + ((err as Error).message || "AI 暂不可用") }]);
     } finally { setSending(false); }
   };
 
-  useEffect(() => { chatRef.current?.scrollTo(0, chatRef.current.scrollHeight); }, [messages]);
+  useEffect(() => { chatRef.current?.scrollTo(0, chatRef.current.scrollHeight); }, [messages, streamingText]);
 
   if (loading) return <AppLayout><div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8"><div className="card mb-4"><div className="flex gap-2 mb-2"><SkeletonBox className="h-5 w-12 rounded-full" /><SkeletonBox className="h-5 w-10 rounded-full" /></div><SkeletonBox className="h-7 w-64 mb-1" /><SkeletonBox className="h-4 w-48" /></div><div className="grid lg:grid-cols-5 gap-4"><div className="lg:col-span-2"><div className="card p-3"><SkeletonBox className="h-4 w-48 mb-3" /><SkeletonBox className="h-60 w-full mb-3" /><div className="flex justify-between"><SkeletonBox className="h-4 w-16" /><SkeletonBox className="h-4 w-10" /><SkeletonBox className="h-4 w-16" /></div></div></div><div className="lg:col-span-3"><div className="card"><div className="h-[400px] sm:h-[450px] space-y-3 mb-4"><SkeletonBox className="h-16 w-3/4 ml-auto" /><SkeletonBox className="h-20 w-3/4" /><SkeletonBox className="h-16 w-2/3" /></div><div className="flex gap-2"><SkeletonBox className="flex-1 h-16 rounded-lg" /><SkeletonBox className="h-10 w-16 rounded-lg" /></div></div></div></div></div></AppLayout>;
   if (!caseData) return <AppLayout><div className="max-w-4xl mx-auto px-4 py-12 text-center text-[#6B7F96] dark:text-slate-400">病例未找到</div></AppLayout>;
@@ -272,7 +280,16 @@ export default function CaseDetailPage() {
                       )}
                     </div>
                   ))}
-                  {sending && (
+                  {streamingText !== null && (
+                    <div className="flex gap-2 justify-start">
+                      <div className="w-7 h-7 rounded-full bg-[#1B4F8A] dark:bg-blue-600 flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5">⚡</div>
+                      <div className="bg-[#F5F8FC] dark:bg-slate-800 border border-[#DDE5EE] dark:border-slate-700 rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed text-[#3D5166] dark:text-slate-300 max-w-[80%]">
+                        <Markdown text={streamingText} />
+                        <span className="inline-block w-1.5 h-4 bg-[#1B4F8A] dark:bg-blue-400 ml-0.5 animate-pulse align-middle" />
+                      </div>
+                    </div>
+                  )}
+                  {sending && streamingText === null && (
                     <div className="flex gap-2 justify-start">
                       <div className="w-7 h-7 rounded-full bg-[#1B4F8A] dark:bg-blue-600 flex items-center justify-center text-white text-xs font-bold shrink-0">⚡</div>
                       <div className="bg-[#F5F8FC] dark:bg-slate-800 border border-[#DDE5EE] dark:border-slate-700 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1.5">
