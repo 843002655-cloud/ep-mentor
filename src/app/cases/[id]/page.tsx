@@ -38,7 +38,15 @@ export default function CaseDetailPage() {
   const [caseData, setCaseData] = useState<Case | null>(null);
   const [figures, setFigures] = useState<Figure[]>([]);
   const [figIdx, setFigIdx] = useState(0);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = sessionStorage.getItem(`chat_${caseId}`);
+        return saved ? JSON.parse(saved) : [];
+      } catch { return []; }
+    }
+    return [];
+  });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -56,6 +64,8 @@ export default function CaseDetailPage() {
   const [lightboxImg, setLightboxImg] = useState<string | null>(null);
   const [allDone, setAllDone] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
+  const isAtBottomRef = useRef(true);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     caseService.getCaseById(caseId).then((c) => {
@@ -202,6 +212,7 @@ export default function CaseDetailPage() {
     setFeedbackMap({});
     if (typeof window !== "undefined") {
       try { localStorage.removeItem(`feedback_${caseId}`); } catch {}
+      try { sessionStorage.removeItem(`chat_${caseId}`); } catch {}
     }
   };
 
@@ -225,12 +236,10 @@ export default function CaseDetailPage() {
       .filter((m) => !m._uiOnly)
       .map((m) => `${m.role === "user" ? "👤 学员" : "⚡ AI导师"}:\n${m.content}`)
       .join("\n\n---\n\n");
-    navigator.clipboard.writeText(text).then(
-      () => {
-        // Brief feedback: could show toast, but a quick console is enough for now
-      },
-      () => {}
-    );
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }, () => {});
   };
 
   const handleNextFigure = () => {
@@ -242,7 +251,30 @@ export default function CaseDetailPage() {
     jumpToFigure(next);
   };
 
-  useEffect(() => { chatRef.current?.scrollTo(0, chatRef.current.scrollHeight); }, [messages, streamingText]);
+  // Auto-scroll only when user is already at the bottom
+  const handleChatScroll = () => {
+    const el = chatRef.current;
+    if (!el) return;
+    isAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 50;
+  };
+  useEffect(() => {
+    if (isAtBottomRef.current && chatRef.current) {
+      chatRef.current.scrollTo(0, chatRef.current.scrollHeight);
+    }
+  }, [messages, streamingText]);
+  // Save messages to sessionStorage so refresh doesn't lose conversation
+  useEffect(() => {
+    if (messages.length > 0 && typeof window !== "undefined") {
+      try { sessionStorage.setItem(`chat_${caseId}`, JSON.stringify(messages)); } catch {}
+    }
+  }, [messages, caseId]);
+  // Close lightbox on Escape key
+  useEffect(() => {
+    if (!lightboxImg) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setLightboxImg(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxImg]);
 
   if (loading) return <AppLayout><div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8"><div className="card mb-4"><div className="flex gap-2 mb-2"><SkeletonBox className="h-5 w-12 rounded-full" /><SkeletonBox className="h-5 w-10 rounded-full" /></div><SkeletonBox className="h-7 w-64 mb-1" /><SkeletonBox className="h-4 w-48" /></div><div className="grid lg:grid-cols-5 gap-4"><div className="lg:col-span-2"><div className="card p-3"><SkeletonBox className="h-4 w-48 mb-3" /><SkeletonBox className="h-60 w-full mb-3" /><div className="flex justify-between"><SkeletonBox className="h-4 w-16" /><SkeletonBox className="h-4 w-10" /><SkeletonBox className="h-4 w-16" /></div></div></div><div className="lg:col-span-3"><div className="card"><div className="h-[400px] sm:h-[450px] space-y-3 mb-4"><SkeletonBox className="h-16 w-3/4 ml-auto" /><SkeletonBox className="h-20 w-3/4" /><SkeletonBox className="h-16 w-2/3" /></div><div className="flex gap-2"><SkeletonBox className="flex-1 h-16 rounded-lg" /><SkeletonBox className="h-10 w-16 rounded-lg" /></div></div></div></div></div></AppLayout>;
   if (!caseData) return <AppLayout><div className="max-w-4xl mx-auto px-4 py-12 text-center text-[#6B7F96] dark:text-slate-400">病例未找到</div></AppLayout>;
@@ -334,7 +366,7 @@ export default function CaseDetailPage() {
             {/* Right: chat */}
             <div className="lg:col-span-3 order-2">
               <div className="card">
-                <div ref={chatRef} className="h-[400px] sm:h-[450px] overflow-y-auto mb-4 space-y-3 pr-2">
+                <div ref={chatRef} onScroll={handleChatScroll} className="h-[400px] sm:h-[450px] overflow-y-auto mb-4 space-y-3 pr-2">
                   {messages.map((msg, i) => (
                     <div key={i} className={`flex gap-2 msg-enter ${msg.role==="user"?"justify-end":"justify-start"}`}>
                       {/* AI avatar */}
@@ -408,7 +440,7 @@ export default function CaseDetailPage() {
                   <button onClick={handleSend} disabled={sending||!input.trim()} className="btn-primary self-end text-sm px-4">发送</button>
                 </div>
                 {/* Quick action buttons */}
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <button onClick={handleHint} disabled={sending}
                     className="text-xs px-3 py-1.5 bg-[#FEF3E2] dark:bg-amber-900/20 text-[#854F0B] dark:text-amber-300 rounded-full hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors disabled:opacity-40">
                     💡 给我提示
@@ -423,7 +455,7 @@ export default function CaseDetailPage() {
                   </button>
                   <button onClick={handleCopyConversation} disabled={messages.length < 2}
                     className="text-xs px-3 py-1.5 bg-[#E8F4F0] dark:bg-emerald-900/20 text-[#0F6E56] dark:text-emerald-300 rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors disabled:opacity-40">
-                    📋 复制对话
+                    {copied ? "✅ 已复制" : "📋 复制对话"}
                   </button>
                 </div>
                 {/* Action buttons */}
