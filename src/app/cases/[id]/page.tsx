@@ -115,9 +115,10 @@ export default function CaseDetailPage() {
     if (idx < 0 || idx >= figures.length) return;
     setFigIdx(idx);
     const f = figures[idx];
-    setMessages([{
-      role: "assistant",
-      content: `📷 **${f.figure_number}: ${f.title}**\n\n${f.description ? "📖 " + f.description + "\n\n" : ""}🎯 教学要点：${f.teaching_points}\n\n${f.key_question}`,
+    // Append transition message instead of replacing history
+    setMessages((prev) => [...prev, {
+      role: "assistant" as const,
+      content: `🔽 现在看向：**${f.figure_number}: ${f.title}**\n\n${f.description ? "📖 " + f.description + "\n\n" : ""}🎯 教学要点：${f.teaching_points}\n\n${f.key_question}`,
     }]);
   };
 
@@ -135,12 +136,15 @@ export default function CaseDetailPage() {
     const userMessage: Message = { role: "user", content: input };
     setMessages((p) => [...p, userMessage]); setInput(""); setSending(true);
     try {
-      const ctx: CaseInput = {
+      // Build rich context from case data + content_json + current figure
+      const ctx: CaseInput & { contentJson?: Record<string, unknown>; currentFigure?: Record<string, unknown> } = {
         title: caseData.title, category: caseData.category as CaseInput["category"],
         difficulty: caseData.difficulty as CaseInput["difficulty"],
         description: caseData.description, ecg_findings: caseData.ecg_findings,
         question: caseData.question, hint: caseData.hint,
         key_points: caseData.key_points, is_published: caseData.is_published,
+        contentJson: caseData.content_json,
+        currentFigure: figures[figIdx] as unknown as Record<string, unknown> || undefined,
       };
       const rawReply = await chatService.sendMessageStream(
         [...messages, userMessage].slice(-10), ctx, caseId, () => {}

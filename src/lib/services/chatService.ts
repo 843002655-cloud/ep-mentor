@@ -17,6 +17,8 @@ export interface CaseContext {
   key_points: string[];
   question: string;
   hint: string;
+  contentJson?: Record<string, unknown>;
+  currentFigure?: Record<string, unknown>;
 }
 
 export interface QuotaInfo {
@@ -44,7 +46,15 @@ export const chatService = {
   ): Promise<{ reply: string; quota?: QuotaInfo }> {
     const data = await request<{ reply: string; quota?: QuotaInfo }>(
       ROUTES.API_CHAT,
-      { caseContext, messages, caseId, stream: false }
+      {
+        caseContext: caseContext.contentJson
+          ? { ...caseContext, ...caseContext.contentJson }
+          : caseContext,
+        messages,
+        caseId,
+        stream: false,
+        currentFigure: caseContext.currentFigure,
+      }
     );
     return { reply: data.reply, quota: data.quota };
   },
@@ -59,7 +69,15 @@ export const chatService = {
     const res = await fetch(ROUTES.API_CHAT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ caseContext, messages, caseId, stream: true }),
+      body: JSON.stringify({
+        caseContext: caseContext.contentJson
+          ? { ...caseContext, ...caseContext.contentJson }
+          : caseContext,
+        messages,
+        caseId,
+        stream: true,
+        currentFigure: caseContext.currentFigure,
+      }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({ error: "请求失败" }));
