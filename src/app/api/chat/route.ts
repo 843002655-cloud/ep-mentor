@@ -188,7 +188,19 @@ ${buildCaseContext(caseContext)}
 
 **学员回答完全正确且全面时：**
 → 给出真诚的肯定，然后立即提出一个更深层的挑战性问题：
-"你分析得非常完整。那让我问你一个进阶问题：<更难的问题>"`;
+"你分析得非常完整。那让我问你一个进阶问题：<更难的问题>"
+
+**学员请求评估时（说"评估"、"评估我的表现"）：**
+→ 不要继续提问，而是给出结构化评估报告，包含以下四个维度：
+1. 诊断推理能力：学员在鉴别诊断、ECG 解读方面的表现
+2. 知识掌握度：对电生理机制、解剖结构、指南的理解深度
+3. 思维系统性：分析是否有条理、逻辑是否严密
+4. 改进建议：指出 1-2 个最需要加强的方向
+格式用简洁的要点，结尾问一个帮助巩固薄弱环节的问题。
+
+# 教学进度追踪
+每隔 5-6 轮对话，自然地穿插一句简短的学习进度小结（1-2 句话），
+肯定学员的进步，并指出下一步的学习重点。不要生硬，像导师随口说的那样。`;
 
   return prompt;
 }
@@ -345,12 +357,10 @@ export async function POST(request: NextRequest) {
               const supabaseAdmin = getSupabaseAdmin(cookieHeader);
               await supabaseAdmin
                 .from("user_progress")
-                .insert({
-                  user_id: userId,
-                  case_id: caseId,
-                  completed_at: new Date().toISOString(),
-                  score: 0,
-                })
+                .upsert(
+                  { user_id: userId, case_id: caseId, completed_at: new Date().toISOString(), score: 0 },
+                  { onConflict: "user_id,case_id" }
+                )
                 .select()
                 .maybeSingle();
             }

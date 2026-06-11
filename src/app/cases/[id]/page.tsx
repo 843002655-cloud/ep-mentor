@@ -43,6 +43,7 @@ export default function CaseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [streamingText, setStreamingText] = useState<string | null>(null);
+  const [feedbackMap, setFeedbackMap] = useState<Record<number, "up" | "down">>({});
   const [allDone, setAllDone] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
 
@@ -139,6 +140,51 @@ export default function CaseDetailPage() {
     }]);
     setAllDone(false);
     setStreamingText(null);
+    setFeedbackMap({});
+  };
+
+  const handleFeedback = (msgIndex: number, type: "up" | "down") => {
+    setFeedbackMap((prev) => {
+      const next = { ...prev };
+      if (next[msgIndex] === type) {
+        delete next[msgIndex];
+      } else {
+        next[msgIndex] = type;
+      }
+      return next;
+    });
+  };
+
+  const handleEvaluate = async () => {
+    if (sending || !caseData || messages.length < 3) return;
+    const evalMsg: Message = { role: "user", content: "请对我的表现做一个结构化评估，告诉我哪些方面做得好，哪些方面需要加强。" };
+    setMessages((p) => [...p, evalMsg]);
+    setSending(true);
+    setStreamingText(null);
+    try {
+      const ctx = {
+        title: caseData.title, category: caseData.category as CaseInput["category"],
+        difficulty: caseData.difficulty as CaseInput["difficulty"],
+        description: caseData.description, ecg_findings: caseData.ecg_findings,
+        question: caseData.question, hint: caseData.hint,
+        key_points: caseData.key_points, is_published: caseData.is_published,
+        contentJson: caseData.content_json,
+        currentFigure: figures[figIdx] as unknown as Record<string, unknown> || undefined,
+      };
+      let fullText = "";
+      await chatService.sendMessageStream(
+        [...messages, evalMsg].slice(-20), ctx, caseId,
+        (chunk: string) => {
+          fullText += chunk;
+          flushSync(() => setStreamingText(fullText));
+        }
+      );
+      const display = fullText;
+      setMessages((p) => [...p, { role: "assistant", content: display }]);
+      setStreamingText(null);
+    } catch (err: unknown) {
+      setMessages((p) => [...p, { role: "assistant", content: "抱歉：" + ((err as Error).message || "AI 暂不可用") }]);
+    } finally { setSending(false); }
   };
 
   const handleNextFigure = () => {
@@ -167,7 +213,7 @@ export default function CaseDetailPage() {
       };
       let fullText = "";
       const rawReply = await chatService.sendMessageStream(
-        [...messages, userMessage].slice(-10), ctx, caseId,
+        [...messages, userMessage].slice(-20), ctx, caseId,
         (chunk: string) => {
           fullText += chunk;
           flushSync(() => {
@@ -291,6 +337,26 @@ export default function CaseDetailPage() {
                           : "bg-[#F5F8FC] dark:bg-slate-800 text-[#3D5166] dark:text-slate-300 rounded-bl-md border border-[#DDE5EE] dark:border-slate-700"
                       }`}>
                         <Markdown text={msg.content} />
+                        {msg.role === "assistant" && (
+                          <div className="flex items-center gap-1 mt-2 pt-1.5 border-t border-[#DDE5EE] dark:border-slate-600">
+                            <button onClick={() => handleFeedback(i, "up")}
+                              className={`text-xs px-1.5 py-0.5 rounded transition-colors ${
+                                feedbackMap[i] === "up"
+                                  ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400"
+                                  : "text-[#8FA0B4] dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400"
+                              }`}>
+                              👍
+                            </button>
+                            <button onClick={() => handleFeedback(i, "down")}
+                              className={`text-xs px-1.5 py-0.5 rounded transition-colors ${
+                                feedbackMap[i] === "down"
+                                  ? "bg-red-100 dark:bg-red-900/40 text-red-500 dark:text-red-400"
+                                  : "text-[#8FA0B4] dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400"
+                              }`}>
+                              👎
+                            </button>
+                          </div>
+                        )}
                       </div>
                       {/* User avatar placeholder (right side) */}
                       {msg.role === "user" && (
@@ -336,6 +402,10 @@ export default function CaseDetailPage() {
                   <button onClick={handleRestart} disabled={sending}
                     className="text-xs px-3 py-1.5 bg-[#F5F8FC] dark:bg-slate-800 text-[#6B7F96] dark:text-slate-400 rounded-full hover:bg-[#E8ECF0] dark:hover:bg-slate-700 transition-colors disabled:opacity-40">
                     🔄 重新开始
+                  </button>
+                  <button onClick={handleEvaluate} disabled={sending || messages.length < 3}
+                    className="text-xs px-3 py-1.5 bg-[#EDE9FB] dark:bg-purple-900/20 text-[#4C3D9E] dark:text-purple-300 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors disabled:opacity-40">
+                    📊 评估我
                   </button>
                 </div>
                 {/* Action buttons */}

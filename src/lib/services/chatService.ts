@@ -59,42 +59,58 @@ export const chatService = {
     return { reply: data.reply, quota: data.quota };
   },
 
-  /** 流式发送消息（stream: true）— Web 专用 */
+  /** 流式发送消息（stream: true）— Web 专用，含 30s 超时和一次重试 */
   async sendMessageStream(
     messages: Message[],
     caseContext: CaseContext,
     caseId: string,
-    onChunk: (text: string) => void
+    onChunk: (text: string) => void,
+    retry = 0
   ): Promise<string> {
-    const res = await fetch(ROUTES.API_CHAT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        caseContext: caseContext.contentJson
-          ? { ...caseContext, ...caseContext.contentJson }
-          : caseContext,
-        messages,
-        caseId,
-        stream: true,
-        currentFigure: caseContext.currentFigure,
-      }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({ error: "请求失败" }));
-      throw new Error(data.error || "请求失败");
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    try {
+      const res = await fetch(ROUTES.API_CHAT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          caseContext: caseContext.contentJson
+            ? { ...caseContext, ...caseContext.contentJson }
+            : caseContext,
+          messages,
+          caseId,
+          stream: true,
+          currentFigure: caseContext.currentFigure,
+        }),
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: "请求失败" }));
+        throw new Error(data.error || "请求失败");
+      }
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("流式响应不支持");
+      const decoder = new TextDecoder();
+      let fullText = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        fullText += chunk;
+        onChunk(chunk);
+      }
+      return fullText;
+    } catch (err: unknown) {
+      const isAbort = (err as Error).name === "AbortError";
+      const isNetwork = err instanceof TypeError;
+      if ((isAbort || isNetwork) && retry < 1) {
+        return this.sendMessageStream(messages, caseContext, caseId, onChunk, retry + 1);
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
     }
-    const reader = res.body?.getReader();
-    if (!reader) throw new Error("流式响应不支持");
-    const decoder = new TextDecoder();
-    let fullText = "";
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value, { stream: true });
-      fullText += chunk;
-      onChunk(chunk);
-    }
-    return fullText;
   },
 
   /** AI 生成案例（管理员用） */
