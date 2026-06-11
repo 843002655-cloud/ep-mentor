@@ -15,7 +15,7 @@ interface Case {
   hint: string; key_points: string[]; is_published: boolean;
   mapping_system?: string; content_json?: Record<string, unknown>;
 }
-interface Message { role: "user" | "assistant" | "system"; content: string; }
+interface Message { role: "user" | "assistant" | "system"; content: string; _uiOnly?: boolean; }
 interface Figure {
   figure_number: string; title: string; description: string;
   teaching_points: string; key_question: string; image_url?: string;
@@ -43,7 +43,17 @@ export default function CaseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [streamingText, setStreamingText] = useState<string | null>(null);
-  const [feedbackMap, setFeedbackMap] = useState<Record<number, "up" | "down">>({});
+  const [feedbackMap, setFeedbackMap] = useState<Record<number, "up" | "down">>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(`feedback_${caseId}`);
+        return saved ? JSON.parse(saved) : {};
+      } catch { return {}; }
+    }
+    return {};
+  });
+  const [isComposing, setIsComposing] = useState(false);
+  const [lightboxImg, setLightboxImg] = useState<string | null>(null);
   const [allDone, setAllDone] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
 
@@ -122,12 +132,61 @@ export default function CaseDetailPage() {
     setMessages((prev) => [...prev, {
       role: "assistant" as const,
       content: `🔽 现在看向：**${f.figure_number}: ${f.title}**\n\n${f.description ? "📖 " + f.description + "\n\n" : ""}🎯 教学要点：${f.teaching_points}\n\n${f.key_question}`,
+      _uiOnly: true,
     }]);
   };
 
-  const handleHint = () => {
+  // ── Shared send helper (avoids code duplication) ──────────────────
+  const sendMessageToAI = async (userContent: string) => {
     if (sending || !caseData) return;
-    setInput("请给我一些提示");
+    const userMessage: Message = { role: "user", content: userContent };
+    setMessages((p) => [...p, userMessage]);
+    setSending(true);
+    setStreamingText(null);
+    try {
+      const ctx = {
+        title: caseData.title, category: caseData.category as CaseInput["category"],
+        difficulty: caseData.difficulty as CaseInput["difficulty"],
+        description: caseData.description, ecg_findings: caseData.ecg_findings,
+        question: caseData.question, hint: caseData.hint,
+        key_points: caseData.key_points, is_published: caseData.is_published,
+        contentJson: caseData.content_json,
+        currentFigure: figures[figIdx] as unknown as Record<string, unknown> || undefined,
+      };
+      // Filter out UI-only transition messages before sending to API
+      const apiMessages = [...messages.filter((m) => !m._uiOnly), userMessage].slice(-20);
+      let fullText = "";
+      const rawReply = await chatService.sendMessageStream(
+        apiMessages, ctx, caseId,
+        (chunk: string) => {
+          fullText += chunk;
+          flushSync(() => setStreamingText(fullText));
+        }
+      );
+      const finished = fullText || rawReply;
+      let display = finished;
+      try { const p = JSON.parse(finished); display = (p.content || finished) + (p.hint ? "\n\n💡 " + p.hint : ""); } catch {}
+      setMessages((p) => [...p, { role: "assistant", content: display }]);
+      setStreamingText(null);
+    } catch (err: unknown) {
+      setMessages((p) => [...p, { role: "assistant", content: "抱歉：" + ((err as Error).message || "AI 暂不可用") }]);
+    } finally { setSending(false); }
+  };
+
+  const handleSend = () => {
+    if (!input.trim() || sending) return;
+    sendMessageToAI(input);
+    setInput("");
+  };
+
+  const handleHint = () => {
+    if (sending) return;
+    sendMessageToAI("请给我一些提示");
+  };
+
+  const handleEvaluate = () => {
+    if (sending || messages.length < 3) return;
+    sendMessageToAI("请对我的表现做一个结构化评估，告诉我哪些方面做得好，哪些方面需要加强。");
   };
 
   const handleRestart = () => {
@@ -141,6 +200,9 @@ export default function CaseDetailPage() {
     setAllDone(false);
     setStreamingText(null);
     setFeedbackMap({});
+    if (typeof window !== "undefined") {
+      try { localStorage.removeItem(`feedback_${caseId}`); } catch {}
+    }
   };
 
   const handleFeedback = (msgIndex: number, type: "up" | "down") => {
@@ -151,40 +213,24 @@ export default function CaseDetailPage() {
       } else {
         next[msgIndex] = type;
       }
+      if (typeof window !== "undefined") {
+        try { localStorage.setItem(`feedback_${caseId}`, JSON.stringify(next)); } catch {}
+      }
       return next;
     });
   };
 
-  const handleEvaluate = async () => {
-    if (sending || !caseData || messages.length < 3) return;
-    const evalMsg: Message = { role: "user", content: "请对我的表现做一个结构化评估，告诉我哪些方面做得好，哪些方面需要加强。" };
-    setMessages((p) => [...p, evalMsg]);
-    setSending(true);
-    setStreamingText(null);
-    try {
-      const ctx = {
-        title: caseData.title, category: caseData.category as CaseInput["category"],
-        difficulty: caseData.difficulty as CaseInput["difficulty"],
-        description: caseData.description, ecg_findings: caseData.ecg_findings,
-        question: caseData.question, hint: caseData.hint,
-        key_points: caseData.key_points, is_published: caseData.is_published,
-        contentJson: caseData.content_json,
-        currentFigure: figures[figIdx] as unknown as Record<string, unknown> || undefined,
-      };
-      let fullText = "";
-      await chatService.sendMessageStream(
-        [...messages, evalMsg].slice(-20), ctx, caseId,
-        (chunk: string) => {
-          fullText += chunk;
-          flushSync(() => setStreamingText(fullText));
-        }
-      );
-      const display = fullText;
-      setMessages((p) => [...p, { role: "assistant", content: display }]);
-      setStreamingText(null);
-    } catch (err: unknown) {
-      setMessages((p) => [...p, { role: "assistant", content: "抱歉：" + ((err as Error).message || "AI 暂不可用") }]);
-    } finally { setSending(false); }
+  const handleCopyConversation = () => {
+    const text = messages
+      .filter((m) => !m._uiOnly)
+      .map((m) => `${m.role === "user" ? "👤 学员" : "⚡ AI导师"}:\n${m.content}`)
+      .join("\n\n---\n\n");
+    navigator.clipboard.writeText(text).then(
+      () => {
+        // Brief feedback: could show toast, but a quick console is enough for now
+      },
+      () => {}
+    );
   };
 
   const handleNextFigure = () => {
@@ -194,41 +240,6 @@ export default function CaseDetailPage() {
       return;
     }
     jumpToFigure(next);
-  };
-
-  const handleSend = async () => {
-    if (!input.trim() || sending || !caseData) return;
-    const userMessage: Message = { role: "user", content: input };
-    setMessages((p) => [...p, userMessage]); setInput(""); setSending(true);
-    try {
-      // Build rich context from case data + content_json + current figure
-      const ctx: CaseInput & { contentJson?: Record<string, unknown>; currentFigure?: Record<string, unknown> } = {
-        title: caseData.title, category: caseData.category as CaseInput["category"],
-        difficulty: caseData.difficulty as CaseInput["difficulty"],
-        description: caseData.description, ecg_findings: caseData.ecg_findings,
-        question: caseData.question, hint: caseData.hint,
-        key_points: caseData.key_points, is_published: caseData.is_published,
-        contentJson: caseData.content_json,
-        currentFigure: figures[figIdx] as unknown as Record<string, unknown> || undefined,
-      };
-      let fullText = "";
-      const rawReply = await chatService.sendMessageStream(
-        [...messages, userMessage].slice(-20), ctx, caseId,
-        (chunk: string) => {
-          fullText += chunk;
-          flushSync(() => {
-            setStreamingText(fullText);
-          });
-        }
-      );
-      const finished = fullText || rawReply;
-      let display = finished;
-      try { const p = JSON.parse(finished); display = (p.content || finished) + (p.hint ? "\n\n💡 " + p.hint : ""); } catch {}
-      setMessages((p) => [...p, { role: "assistant", content: display }]);
-      setStreamingText(null);
-    } catch (err: unknown) {
-      setMessages((p) => [...p, { role: "assistant", content: "抱歉：" + ((err as Error).message || "AI 暂不可用") }]);
-    } finally { setSending(false); }
   };
 
   useEffect(() => { chatRef.current?.scrollTo(0, chatRef.current.scrollHeight); }, [messages, streamingText]);
@@ -300,7 +311,8 @@ export default function CaseDetailPage() {
                   </div>
                   {figures[figIdx].image_url ? (
                     <img src={figures[figIdx].image_url} alt={figures[figIdx].title}
-                      className="w-full rounded-lg mb-3 border border-[#E8ECF0] dark:border-slate-700" />
+                      onClick={() => setLightboxImg(figures[figIdx].image_url || null)}
+                      className="w-full rounded-lg mb-3 border border-[#E8ECF0] dark:border-slate-700 cursor-zoom-in hover:opacity-95 transition-opacity" />
                   ) : (
                     <div className="bg-[#F5F8FC] dark:bg-slate-800 rounded-lg mb-3 h-40 flex items-center justify-center text-3xl">
                       📊
@@ -337,7 +349,7 @@ export default function CaseDetailPage() {
                           : "bg-[#F5F8FC] dark:bg-slate-800 text-[#3D5166] dark:text-slate-300 rounded-bl-md border border-[#DDE5EE] dark:border-slate-700"
                       }`}>
                         <Markdown text={msg.content} />
-                        {msg.role === "assistant" && (
+                        {msg.role === "assistant" && !msg._uiOnly && (
                           <div className="flex items-center gap-1 mt-2 pt-1.5 border-t border-[#DDE5EE] dark:border-slate-600">
                             <button onClick={() => handleFeedback(i, "up")}
                               className={`text-xs px-1.5 py-0.5 rounded transition-colors ${
@@ -388,8 +400,10 @@ export default function CaseDetailPage() {
                 </div>
                 <div className="flex gap-2">
                   <textarea value={input} onChange={(e)=>setInput(e.target.value)}
-                    onKeyDown={(e)=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();handleSend();}}}
-                    placeholder="输入你的分析..." rows={4} disabled={sending}
+                    onCompositionStart={() => setIsComposing(true)}
+                    onCompositionEnd={() => setIsComposing(false)}
+                    onKeyDown={(e)=>{if(e.key==="Enter"&&!e.shiftKey&&!isComposing){e.preventDefault();handleSend();}}}
+                    placeholder="输入你的分析...（Enter 发送，Shift+Enter 换行）" rows={4} disabled={sending}
                     className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-[#C5D3E0] dark:border-slate-600 rounded-lg text-sm text-[#1A2332] dark:text-slate-100 placeholder-[#8FA0B4] dark:placeholder-slate-500 focus:outline-none focus:border-[#1B4F8A] dark:focus:border-blue-400 resize-none" />
                   <button onClick={handleSend} disabled={sending||!input.trim()} className="btn-primary self-end text-sm px-4">发送</button>
                 </div>
@@ -406,6 +420,10 @@ export default function CaseDetailPage() {
                   <button onClick={handleEvaluate} disabled={sending || messages.length < 3}
                     className="text-xs px-3 py-1.5 bg-[#EDE9FB] dark:bg-purple-900/20 text-[#4C3D9E] dark:text-purple-300 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors disabled:opacity-40">
                     📊 评估我
+                  </button>
+                  <button onClick={handleCopyConversation} disabled={messages.length < 2}
+                    className="text-xs px-3 py-1.5 bg-[#E8F4F0] dark:bg-emerald-900/20 text-[#0F6E56] dark:text-emerald-300 rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors disabled:opacity-40">
+                    📋 复制对话
                   </button>
                 </div>
                 {/* Action buttons */}
@@ -430,6 +448,20 @@ export default function CaseDetailPage() {
           </div>
         )}
       </div>
+      {/* Image lightbox */}
+      {lightboxImg && (
+        <div onClick={() => setLightboxImg(null)}
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
+        >
+          <button onClick={() => setLightboxImg(null)}
+            className="absolute top-4 right-4 text-white text-3xl w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+          >✕</button>
+          <img src={lightboxImg} alt="放大查看"
+            className="max-w-[95vw] max-h-[95vh] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </AppLayout>
   );
 }

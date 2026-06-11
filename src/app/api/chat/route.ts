@@ -385,7 +385,7 @@ export async function POST(request: NextRequest) {
     // ── Non-streaming mode: structured JSON ──────────────────────────
     const response = await deepseek.chat.completions.create({
       model: MODEL,
-      max_tokens: 500,
+      max_tokens: 2000,
       temperature: 0.7,
       response_format: { type: "json_object" },
       messages: [
@@ -427,12 +427,10 @@ status 取值说明：
       const supabaseAdmin = getSupabaseAdmin(cookieHeader);
       await supabaseAdmin
         .from("user_progress")
-        .insert({
-          user_id: userId,
-          case_id: caseId,
-          completed_at: new Date().toISOString(),
-          score: 0,
-        })
+        .upsert(
+          { user_id: userId, case_id: caseId, completed_at: new Date().toISOString(), score: 0 },
+          { onConflict: "user_id,case_id" }
+        )
         .select()
         .maybeSingle();
     }
