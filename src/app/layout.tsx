@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.yovigo.cn";
@@ -42,9 +43,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <head>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" async />
-      </head>
       <body className="antialiased">
         <a
           href="#main-content"
@@ -52,6 +50,10 @@ export default function RootLayout({
         >
           跳到主要内容
         </a>
+        <Script
+          src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
+          strategy="afterInteractive"
+        />
         <div id="main-content">{children}</div>
         <script
           dangerouslySetInnerHTML={{

@@ -129,12 +129,20 @@ export default function AdminGeneratePage() {
   const doSave = async () => { if(!result)return; setSaving(true); try { const list=JSON.parse(result); const arr=Array.isArray(list)?list:[list]; for(const c of arr) await caseService.createCase(flattenCase(c as Record<string,unknown>) as never); setResult(""); alert(`保存 ${arr.length} 个`); } catch { alert("保存失败"); } finally { setSaving(false); } };
 
   // ── PDF ──────────────────────────────────────────────────
+  /** Wait up to 15s for PDF.js to load (CDN may be slow in some regions) */
+  const waitForPdfJs = async (): Promise<Record<string, unknown>> => {
+    for (let i = 0; i < 30; i++) {
+      const w = window as unknown as Record<string, Record<string, unknown>>;
+      if (w.pdfjsLib) return w.pdfjsLib;
+      await new Promise(r => setTimeout(r, 500));
+    }
+    throw new Error("PDF.js 未加载，请刷新页面后重试");
+  };
+
   const doPdf = async () => { if(!pdfFile)return; setPdfUp(true); setPdfErr(""); setPdfResult(""); setPdfStep(1);
     try {
       const buf = await pdfFile.arrayBuffer();
-      const w = window as unknown as Record<string, Record<string, unknown>>;
-      const pdfjsLib = w.pdfjsLib as { getDocument: (d: { data: Uint8Array }) => { promise: Promise<{ numPages: number; getPage: (n: number) => Promise<{ getTextContent: () => Promise<{ items: { str: string }[] }> }> }> } } | undefined;
-      if(!pdfjsLib) throw new Error("PDF.js 未加载");
+      const pdfjsLib = await waitForPdfJs() as { getDocument: (d: { data: Uint8Array }) => { promise: Promise<{ numPages: number; getPage: (n: number) => Promise<{ getTextContent: () => Promise<{ items: { str: string }[] }> }> }> } };
       const pdf = await pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
       let text="";
       for(let i=1;i<=pdf.numPages;i++){const p=await pdf.getPage(i);text+=(await p.getTextContent()).items.map((x)=>x.str).join(" ")+"\n";}
@@ -175,9 +183,7 @@ export default function AdminGeneratePage() {
     if(!bookFile)return; setBookSplitting(true); setBookErr(""); setBookCases([]);
     try {
       const buf = await bookFile.arrayBuffer();
-      const w = window as unknown as Record<string, Record<string, unknown>>;
-      const pdfjsLib = w.pdfjsLib as { getDocument: (d: { data: Uint8Array }) => { promise: Promise<{ numPages: number; getPage: (n: number) => Promise<{ getTextContent: () => Promise<{ items: { str: string }[] }> }> }> } } | undefined;
-      if(!pdfjsLib) throw new Error("PDF.js 未加载");
+      const pdfjsLib = await waitForPdfJs() as { getDocument: (d: { data: Uint8Array }) => { promise: Promise<{ numPages: number; getPage: (n: number) => Promise<{ getTextContent: () => Promise<{ items: { str: string }[] }> }> }> } };
       const pdf = await pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
       let text="";
       for(let i=1;i<=pdf.numPages;i++){const p=await pdf.getPage(i);text+=(await p.getTextContent()).items.map((x)=>x.str).join(" ")+"\n";}
