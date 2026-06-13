@@ -19,11 +19,19 @@ export async function GET(request: NextRequest) {
 
 // POST /api/resources — admin create
 export async function POST(request: NextRequest) {
-  if (!(await isAdmin(request.headers.get("cookie") || ""))) {
-    return NextResponse.json({ error: "需要管理员权限" }, { status: 403 });
+  try {
+    if (!(await isAdmin(request.headers.get("cookie") || ""))) {
+      return NextResponse.json({ error: "需要管理员权限" }, { status: 403 });
+    }
+    const body = await request.json();
+    const { error } = await supabaseAdmin.from("resources").insert(body);
+    if (error) {
+      console.error("POST /api/resources DB error:", error.message);
+      return NextResponse.json({ error: "创建失败，请稍后重试" }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true });
+  } catch (error: unknown) {
+    console.error("POST /api/resources error:", error);
+    return NextResponse.json({ error: "创建失败，请稍后重试" }, { status: 500 });
   }
-  const body = await request.json();
-  const { error } = await supabaseAdmin.from("resources").insert(body);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
 }

@@ -44,11 +44,19 @@ export async function GET(request: NextRequest) {
 
 // POST /api/cases — admin create case
 export async function POST(request: NextRequest) {
-  if (!(await isAdmin(request.headers.get("cookie") || ""))) {
-    return NextResponse.json({ error: "需要管理员权限" }, { status: 403 });
+  try {
+    if (!(await isAdmin(request.headers.get("cookie") || ""))) {
+      return NextResponse.json({ error: "需要管理员权限" }, { status: 403 });
+    }
+    const body = await request.json();
+    const { error, data } = await supabaseAdmin.from("cases").insert(body).select().single();
+    if (error) {
+      console.error("POST /api/cases DB error:", error.message);
+      return NextResponse.json({ error: "创建失败，请稍后重试" }, { status: 500 });
+    }
+    return NextResponse.json({ case: data });
+  } catch (error: unknown) {
+    console.error("POST /api/cases error:", error);
+    return NextResponse.json({ error: "创建失败，请稍后重试" }, { status: 500 });
   }
-  const body = await request.json();
-  const { error, data } = await supabaseAdmin.from("cases").insert(body).select().single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ case: data });
 }
