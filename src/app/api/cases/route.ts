@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/api-utils";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { caseSchema, formatZodErrors } from "@/lib/validators";
 
 // GET /api/cases — list cases (public: published only; admin: all)
 export async function GET(request: NextRequest) {
@@ -49,7 +50,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "需要管理员权限" }, { status: 403 });
     }
     const body = await request.json();
-    const { error, data } = await supabaseAdmin.from("cases").insert(body).select().single();
+    const parsed = caseSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "数据格式错误", details: formatZodErrors(parsed.error) }, { status: 400 });
+    }
+    const { error, data } = await supabaseAdmin.from("cases").insert(parsed.data).select().single();
     if (error) {
       console.error("POST /api/cases DB error:", error.message);
       return NextResponse.json({ error: "创建失败，请稍后重试" }, { status: 500 });

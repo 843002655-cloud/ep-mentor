@@ -1,4 +1,10 @@
 import AppLayout from "@/components/AppLayout";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "升级会员",
+  description: "升级 EP Mentor 会员，解锁无限AI对话、优先获取最新病例等特权",
+};
 
 export default function UpgradePage() {
   return (

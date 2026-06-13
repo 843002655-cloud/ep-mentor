@@ -205,7 +205,7 @@ export default function CreateCasePage() {
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {images.map((img, idx) => (
                   <div key={idx} className="flex items-center gap-2 p-2 bg-[#F5F8FC] rounded-lg">
-                    <img src={img.url} className="w-12 h-12 object-cover rounded" />
+                    <img src={img.url} loading="lazy" className="w-12 h-12 object-cover rounded" />
                     <input value={img.label} onChange={(e) => { const arr = [...images]; arr[idx].label = e.target.value; setImages(arr); }} className="flex-1 text-xs px-2 py-1 border border-[#C5D3E0] rounded" />
                     <button onClick={() => moveImage(idx, idx - 1)} disabled={idx === 0} className="text-xs px-1.5 py-0.5 border rounded disabled:opacity-30">↑</button>
                     <button onClick={() => moveImage(idx, idx + 1)} disabled={idx === images.length - 1} className="text-xs px-1.5 py-0.5 border rounded disabled:opacity-30">↓</button>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AppLayout from "@/components/AppLayout";
 import { SkeletonPage } from "@/components/Skeleton";
 import EmptyState from "@/components/EmptyState";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 
 interface Resource { id: string; title: string; category: string; source: string; url: string; summary: string; }
 
@@ -22,6 +23,7 @@ const catColors: Record<string, string> = {
 };
 
 export default function LibraryPage() {
+  usePageTitle("学习资料库");
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState("");

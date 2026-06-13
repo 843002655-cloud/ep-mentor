@@ -8,6 +8,7 @@ import { SkeletonBox } from "@/components/Skeleton";
 import EmptyState from "@/components/EmptyState";
 import type { ProgressItem } from "@/lib/services";
 import { ROUTES } from "@/lib/routes";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 
 const roleLabels: Record<string, string> = {
   resident: "住院医 / 进修生",
@@ -32,6 +33,7 @@ const badges = [
 ];
 
 export default function ProfilePage() {
+  usePageTitle("个人中心");
   const [user, setUser] = useState<{ email?: string; user_metadata?: Record<string, string> } | null>(null);
   const [progress, setProgress] = useState<ProgressItem[]>([]);
   const [totalCases, setTotalCases] = useState(0);

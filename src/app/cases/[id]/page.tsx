@@ -8,6 +8,7 @@ import { caseService, chatService } from "@/lib/services";
 import { SkeletonBox } from "@/components/Skeleton";
 import Markdown from "@/components/Markdown";
 import type { CaseInput } from "@/lib/services";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 
 interface Case {
   id: string; title: string; category: string; difficulty: string;
@@ -34,6 +35,7 @@ const diffColors: Record<string, string> = {
 };
 
 export default function CaseDetailPage() {
+  usePageTitle("病例详情");
   const params = useParams(); const caseId = params.id as string;
   const [caseData, setCaseData] = useState<Case | null>(null);
   const [figures, setFigures] = useState<Figure[]>([]);
@@ -343,6 +345,7 @@ export default function CaseDetailPage() {
                   </div>
                   {figures[figIdx].image_url ? (
                     <img src={figures[figIdx].image_url} alt={figures[figIdx].title}
+                      loading="lazy"
                       onClick={() => setLightboxImg(figures[figIdx].image_url || null)}
                       className="w-full rounded-lg mb-3 border border-[#E8ECF0] dark:border-slate-700 cursor-zoom-in hover:opacity-95 transition-opacity" />
                   ) : (
@@ -489,6 +492,7 @@ export default function CaseDetailPage() {
             className="absolute top-4 right-4 text-white text-3xl w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
           >✕</button>
           <img src={lightboxImg} alt="放大查看"
+            loading="lazy"
             className="max-w-[95vw] max-h-[95vh] object-contain rounded-lg shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           />

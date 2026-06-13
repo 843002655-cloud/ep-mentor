@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
 import { ROUTES } from "@/lib/routes";
 import { submissionService } from "@/lib/services";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 
 export default function SubmitPage() {
+  usePageTitle("投稿病例");
   const router = useRouter();
   const [form, setForm] = useState({ doctor_name: "", hospital: "", case_title: "", case_content: "" });
   const [loading, setLoading] = useState(false);

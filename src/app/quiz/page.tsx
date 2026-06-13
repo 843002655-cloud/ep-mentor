@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AppLayout from "@/components/AppLayout";
 import { SkeletonBox } from "@/components/Skeleton";
 import type { QuizQuestion } from "@/lib/quiz-data";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 
 const QUIZ_SIZE = 5; // 每轮题目数
 
@@ -18,6 +19,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export default function QuizPage() {
+  usePageTitle("在线测验");
   const [allQuestions, setAllQuestions] = useState<QuizQuestion[]>([]);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [loading, setLoading] = useState(true);

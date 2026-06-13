@@ -8,6 +8,7 @@ import { SkeletonPage } from "@/components/Skeleton";
 import CaseCardThumb from "@/components/CaseCardThumb";
 import EmptyState from "@/components/EmptyState";
 import { ROUTES } from "@/lib/routes";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 
 interface Case {
   id: string; title: string; category: string; difficulty: string;
@@ -194,5 +195,6 @@ function CaseList() {
 }
 
 export default function CasesPage() {
+  usePageTitle("病例库");
   return <Suspense fallback={<SkeletonPage variant="case" count={6} />}><CaseList /></Suspense>;
 }

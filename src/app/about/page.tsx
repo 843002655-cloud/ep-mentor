@@ -1,4 +1,10 @@
 import AppLayout from "@/components/AppLayout";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "关于我们",
+  description: "EP Mentor 由热爱电生理的工程师和临床医生共同打造的心脏电生理AI教学平台",
+};
 
 export default function AboutPage() {
   return (

@@ -7,8 +7,10 @@ import { SkeletonPage } from "@/components/Skeleton";
 import EmptyState from "@/components/EmptyState";
 import { ROUTES } from "@/lib/routes";
 import type { ProgressItem } from "@/lib/services";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 
 export default function DashboardPage() {
+  usePageTitle("学习仪表盘");
   const [progress, setProgress] = useState<ProgressItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState("");

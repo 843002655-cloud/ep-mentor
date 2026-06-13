@@ -4,6 +4,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import AppLayout from "@/components/AppLayout";
 import AnimatedNumber from "@/components/AnimatedNumber";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 
 const HeartModel = dynamic(() => import("@/components/HeartModel"), {
   ssr: false,
@@ -153,6 +154,7 @@ const electrodeRef = [
 /* ── Main Page ─────────────────────────────────────────────────── */
 
 export default function ToolsPage() {
+  usePageTitle("实用工具");
   return (
     <AppLayout>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">

@@ -10,6 +10,7 @@ import {
   type ConsultMessage,
 } from "@/lib/services/consultService";
 import { consultStore } from "@/lib/services/consultStorage";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 
 // ── Quick questions ──────────────────────────────────────────────────────
 const QUICK_QUESTIONS = [
@@ -64,6 +65,7 @@ function CopyButton({ text }: { text: string }) {
 // ── Main page ────────────────────────────────────────────────────────────
 
 export default function AIConsultPage() {
+  usePageTitle("AI 顾问");
   const [messages, setMessages] = useState<ConsultMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -391,6 +393,7 @@ export default function AIConsultPage() {
                               <img
                                 src={img}
                                 alt={`上传图片 ${j + 1}`}
+                                loading="lazy"
                                 className="max-w-[200px] max-h-[200px] rounded-lg border border-[#DDE5EE] dark:border-slate-600 object-contain cursor-zoom-in hover:border-[#1B4F8A] dark:hover:border-blue-400 transition-colors"
                               />
                             </a>
@@ -482,6 +485,7 @@ export default function AIConsultPage() {
                 <img
                   src={img.dataUrl}
                   alt={img.name}
+                  loading="lazy"
                   className="w-full h-full object-cover"
                 />
                 <button

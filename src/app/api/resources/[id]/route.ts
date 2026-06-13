@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/api-utils";
+import { resourceUpdateSchema, formatZodErrors } from "@/lib/validators";
 
 // PUT /api/resources/[id] — admin update
 export async function PUT(
@@ -12,9 +13,13 @@ export async function PUT(
       return NextResponse.json({ error: "需要管理员权限" }, { status: 403 });
     }
     const body = await request.json();
+    const parsed = resourceUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "数据格式错误", details: formatZodErrors(parsed.error) }, { status: 400 });
+    }
     const { error } = await supabaseAdmin
       .from("resources")
-      .update(body)
+      .update(parsed.data)
       .eq("id", params.id);
     if (error) {
       console.error("PUT /api/resources/[id] DB error:", error.message);

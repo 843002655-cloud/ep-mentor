@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin, requireAuth } from "@/lib/api-utils";
+import { submissionSchema, formatZodErrors } from "@/lib/validators";
 
 // GET /api/submissions — admin list submissions
 export async function GET(request: NextRequest) {
@@ -28,8 +29,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "请先登录" }, { status: 401 });
     }
     const body = await request.json();
+    const parsed = submissionSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "数据格式错误", details: formatZodErrors(parsed.error) }, { status: 400 });
+    }
     const { error } = await supabaseAdmin.from("submissions").insert({
-      ...body,
+      ...parsed.data,
       status: "pending",
     });
     if (error) {

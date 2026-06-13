@@ -1,4 +1,10 @@
 import AppLayout from "@/components/AppLayout";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "使用条款与版权声明",
+  description: "EP Mentor 使用条款、版权声明及免责声明",
+};
 
 export default function TermsPage() {
   return (

@@ -8,6 +8,7 @@ import CaseCardThumb from "@/components/CaseCardThumb";
 import EcgBackground from "@/components/EcgBackground";
 import { ROUTES } from "@/lib/routes";
 import { caseService } from "@/lib/services";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 
 // ── Hero AI Demo ───────────────────────────────────────────────────
 
@@ -96,6 +97,7 @@ const diffBadge: Record<string, string> = {
 // ── Page ───────────────────────────────────────────────────────────
 
 export default function Home() {
+  usePageTitle("首页");
   const [featuredCases, setFeaturedCases] = useState<{ id: string; title: string; category: string; difficulty: string; description: string }[]>([]);
 
   useEffect(() => {

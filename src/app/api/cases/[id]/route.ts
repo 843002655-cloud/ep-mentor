@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/api-utils";
+import { caseUpdateSchema, formatZodErrors } from "@/lib/validators";
 
 // GET /api/cases/[id] — single case (published only for non-admin)
 export async function GET(
@@ -43,9 +44,13 @@ export async function PUT(
       return NextResponse.json({ error: "需要管理员权限" }, { status: 403 });
     }
     const body = await request.json();
+    const parsed = caseUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "数据格式错误", details: formatZodErrors(parsed.error) }, { status: 400 });
+    }
     const { error } = await supabaseAdmin
       .from("cases")
-      .update(body)
+      .update(parsed.data)
       .eq("id", params.id);
     if (error) {
       console.error("PUT /api/cases/[id] DB error:", error.message);

@@ -6,6 +6,7 @@ import AppLayout from "@/components/AppLayout";
 import { authService } from "@/lib/services";
 import { SkeletonBox } from "@/components/Skeleton";
 import { navigateTo, replaceTo } from "@/lib/browser";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 
 const roles = [
   { value: "resident", label: "住院医 / 进修生" },
@@ -156,6 +157,7 @@ function AuthForm() {
 }
 
 export default function AuthPage() {
+  usePageTitle("登录");
   return (
     <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-[#F5F8FC] dark:bg-slate-900"><div className="card w-full max-w-md"><SkeletonBox className="h-6 w-24 mx-auto mb-4" /><SkeletonBox className="h-4 w-48 mx-auto mb-6" /><SkeletonBox className="h-10 w-full mb-4" /><SkeletonBox className="h-10 w-full mb-4" /><SkeletonBox className="h-10 w-full" /></div></div>}>
       <AuthForm />
