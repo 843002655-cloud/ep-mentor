@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  poweredByHeader: false,
+  generateEtags: true,
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "kqoigeigwucvlpzbvboy.supabase.co" },
@@ -42,6 +44,20 @@ const nextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-XSS-Protection", value: "1; mode=block" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, must-revalidate",
+          },
+        ],
+      },
+      {
+        // Static assets: longer cache
+        source: "/_next/static/(.*)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
         ],
       },
     ];

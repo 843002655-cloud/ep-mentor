@@ -41,11 +41,19 @@ export default function Navbar() {
     return onDocumentEvent("mousedown", handler);
   }, []);
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDropdownOpen(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
+
   const handleLogout = async () => { await authService.logout(); navigateTo(ROUTES.HOME); };
   const avatarLetter = user?.email?.[0]?.toUpperCase() || "?";
 
   return (
-    <nav className="border-b border-[#E8ECF0] dark:border-slate-700 bg-white dark:bg-slate-900 sticky top-0 z-50" style={{ borderBottomWidth: 0.5 }}>
+    <nav aria-label="主导航" className="border-b border-[#E8ECF0] dark:border-slate-700 bg-white dark:bg-slate-900 sticky top-0 z-50" style={{ borderBottomWidth: 0.5 }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2 shrink-0">
@@ -61,7 +69,7 @@ export default function Navbar() {
             <ThemeToggle />
             {user ? (
               <div className="relative" ref={dropdownRef}>
-                <button onClick={() => setDropdownOpen(!dropdownOpen)} className="w-9 h-9 rounded-full bg-[#1B4F8A] dark:bg-blue-600 flex items-center justify-center text-white text-sm font-bold hover:bg-[#154070] dark:hover:bg-blue-500 transition-all" title={user.email}>{avatarLetter}</button>
+                <button onClick={() => setDropdownOpen(!dropdownOpen)} aria-label={dropdownOpen ? "关闭菜单" : "打开菜单"} aria-expanded={dropdownOpen} className="w-9 h-9 rounded-full bg-[#1B4F8A] dark:bg-blue-600 flex items-center justify-center text-white text-sm font-bold hover:bg-[#154070] dark:hover:bg-blue-500 transition-all" title={user.email}>{avatarLetter}</button>
                 {dropdownOpen && (
                   <div className="absolute right-0 top-11 w-48 bg-white dark:bg-slate-900 border border-[#DDE5EE] dark:border-slate-700 rounded-xl shadow-lg py-1 z-50">
                     <div className="px-4 py-2 border-b border-[#E8ECF0] dark:border-slate-700"><p className="text-xs text-[#6B7F96] dark:text-slate-400 truncate">{user.email}</p></div>

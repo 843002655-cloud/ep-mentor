@@ -10,6 +10,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/about`, priority: 0.5, changeFrequency: "monthly" as const },
     { url: `${baseUrl}/auth`, priority: 0.3, changeFrequency: "monthly" as const },
     { url: `${baseUrl}/upgrade`, priority: 0.3, changeFrequency: "monthly" as const },
+    { url: `${baseUrl}/tools`, priority: 0.6, changeFrequency: "monthly" as const },
+    { url: `${baseUrl}/submit`, priority: 0.4, changeFrequency: "monthly" as const },
+    { url: `${baseUrl}/ai-consult`, priority: 0.7, changeFrequency: "weekly" as const },
+    { url: `${baseUrl}/terms`, priority: 0.2, changeFrequency: "monthly" as const },
   ];
   return routes.map((r) => ({
     url: r.url,

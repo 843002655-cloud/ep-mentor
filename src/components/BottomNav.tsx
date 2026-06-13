@@ -19,7 +19,7 @@ export default function BottomNav() {
   if (pathname.startsWith("/admin") || pathname.startsWith("/auth")) return null;
 
   return (
-    <nav className="md:hidden bottom-nav flex items-center justify-around px-2">
+    <nav aria-label="底部导航" className="md:hidden bottom-nav flex items-center justify-around px-2">
       {tabs.map(({ href, label, Icon }) => {
         const active = pathname === href || (href !== "/" && pathname.startsWith(href));
         return (
