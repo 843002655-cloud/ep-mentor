@@ -111,18 +111,18 @@ export default function AdminGeneratePage() {
   const [imgText, setImgText] = useState(""); const [imgUp, setImgUp] = useState(false);
   const [imgResult, setImgResult] = useState(""); const [imgSaving, setImgSaving] = useState(false);
   const [imgErr, setImgErr] = useState(""); const [imgStep, setImgStep] = useState(0);
-  // Book (PDF case book → multiple cases)
+  // Book (PDF case book → one-click import)
   const [bookFile, setBookFile] = useState<File|null>(null);
-  const [bookSplitting, setBookSplitting] = useState(false);
+  const [bookImporting, setBookImporting] = useState(false);
+  const [bookStep, setBookStep] = useState("");
   const [bookErr, setBookErr] = useState("");
   interface BookCase {
     index: number; title: string; text_chunk: string;
     figure_count: number; char_count: number;
-    status: "pending"|"generating"|"done"|"failed"|"saving"|"saved";
+    status: "pending"|"generating"|"done"|"failed"|"saved";
     generated: Record<string,unknown>|null; error: string;
   }
   const [bookCases, setBookCases] = useState<BookCase[]>([]);
-  const [bookGenerating, setBookGenerating] = useState(false);
 
   // ── AI Generate ──────────────────────────────────────────
   const doGenerate = async () => { setGenning(true); setResult(""); try { setResult(JSON.stringify(await chatService.generateCase(cat, diff, cnt), null, 2)); } catch(e) { setResult("失败："+(e as Error).message); } finally { setGenning(false); } };
@@ -178,63 +178,59 @@ export default function AdminGeneratePage() {
   };
   const doImgSave = async () => { if(!imgResult)return; setImgSaving(true); try { const c=JSON.parse(imgResult); await caseService.createCase(flattenCase(c as Record<string,unknown>) as never); setImgResult(""); alert("已保存"); } catch { alert("保存失败"); } finally { setImgSaving(false); } };
 
-  // ── Book (PDF case book → multiple cases) ──────────────────
-  const doBookExtract = async () => {
-    if(!bookFile)return; setBookSplitting(true); setBookErr(""); setBookCases([]);
+  // ── Book (PDF case book → one-click import) ──────────────────
+  const doBookImport = async () => {
+    if(!bookFile)return;
+    setBookImporting(true); setBookErr(""); setBookCases([]);
+
     try {
+      // Phase 1: Extract text
+      setBookStep("extracting");
       const buf = await bookFile.arrayBuffer();
       const pdfjsLib = await waitForPdfJs() as { getDocument: (d: { data: Uint8Array }) => { promise: Promise<{ numPages: number; getPage: (n: number) => Promise<{ getTextContent: () => Promise<{ items: { str: string }[] }> }> }> } };
       const pdf = await pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
       let text="";
       for(let i=1;i<=pdf.numPages;i++){const p=await pdf.getPage(i);text+=(await p.getTextContent()).items.map((x)=>x.str).join(" ")+"\n";}
-      if(!text.trim()) throw new Error("无文字");
-      // Call split API
-      const res=await fetch("/api/split-pdf-cases",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
-      const d=await res.json(); if(!res.ok) throw new Error(d.error||"拆分失败");
-      const cases: BookCase[] = (d.cases as BookCase[]).map((c) => ({...c,status:"pending" as const,generated:null,error:""}));
+      if(!text.trim()) throw new Error("PDF 无文字内容");
+
+      // Phase 2: Split into individual cases
+      setBookStep("splitting");
+      const splitRes=await fetch("/api/split-pdf-cases",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
+      const splitData=await splitRes.json();
+      if(!splitRes.ok) throw new Error(splitData.error||"拆分失败");
+
+      const cases: BookCase[] = (splitData.cases as BookCase[]).map((c) => ({...c,status:"pending" as const,generated:null,error:""}));
       setBookCases(cases);
-    } catch(e) { setBookErr((e as Error).message); } finally { setBookSplitting(false); }
-  };
 
-  const doBookGenerateOne = async (index: number) => {
-    setBookCases(prev => prev.map(c => c.index===index?{...c,status:"generating" as const,error:""}:c));
-    try {
-      const bc = bookCases.find(c=>c.index===index);
-      if(!bc) return;
-      const res=await fetch("/api/generate-book-case",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:bc.text_chunk,case_index:bc.index,case_title:bc.title})});
-      const d=await res.json(); if(!res.ok) throw new Error(d.error||"生成失败");
-      setBookCases(prev => prev.map(c => c.index===index?{...c,status:"done" as const,generated:d.case,error:""}:c));
-    } catch(e) { setBookCases(prev => prev.map(c => c.index===index?{...c,status:"failed" as const,error:(e as Error).message}:c)); }
-  };
+      // Phase 3: Generate each case
+      for(let i=0;i<cases.length;i++){
+        setBookStep(`generating ${i+1}/${cases.length}`);
+        setBookCases(prev => prev.map(c => c.index===cases[i].index?{...c,status:"generating" as const,error:""}:c));
+        try {
+          const genRes=await fetch("/api/generate-book-case",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:cases[i].text_chunk,case_index:cases[i].index,case_title:cases[i].title})});
+          const genData=await genRes.json();
+          if(!genRes.ok) throw new Error(genData.error||"生成失败");
+          setBookCases(prev => prev.map(c => c.index===cases[i].index?{...c,status:"done" as const,generated:genData.case,error:""}:c));
+        } catch(e) {
+          setBookCases(prev => prev.map(c => c.index===cases[i].index?{...c,status:"failed" as const,error:(e as Error).message}:c));
+        }
+      }
 
-  const doBookGenerateAll = async () => {
-    setBookGenerating(true);
-    const pending = bookCases.filter(c=>c.status==="pending"||c.status==="failed");
-    // Generate sequentially to avoid rate limiting
-    for(const bc of pending) {
-      await doBookGenerateOne(bc.index);
-    }
-    setBookGenerating(false);
-  };
+      // Phase 4: Save all generated cases
+      setBookStep("saving");
+      let saved=0;
+      setBookCases(prev => {
+        for(const c of prev){ if(c.status==="done"&&c.generated){ saved++;
+          caseService.createCase(flattenCase(c.generated as Record<string,unknown>, {source_book: c.title}) as never).catch(()=>{});
+        }}
+        return prev.map(c => c.status==="done"?{...c,status:"saved" as const}:c);
+      });
 
-  const doBookSaveOne = async (index: number) => {
-    setBookCases(prev => prev.map(c => c.index===index?{...c,status:"saving" as const}:c));
-    try {
-      const bc = bookCases.find(c=>c.index===index);
-      if(!bc?.generated) return;
-      await caseService.createCase(flattenCase(bc.generated as Record<string,unknown>, {source_book: bc.title}) as never);
-      setBookCases(prev => prev.map(c => c.index===index?{...c,status:"saved" as const}:c));
-    } catch(e) { alert("保存失败："+(e as Error).message);
-      setBookCases(prev => prev.map(c => c.index===index?{...c,status:"done" as const}:c)); }
-  };
-
-  const doBookSaveAll = async () => {
-    const done = bookCases.filter(c=>c.status==="done");
-    if(done.length===0){alert("没有可保存的病例");return;}
-    for(const bc of done) {
-      await doBookSaveOne(bc.index);
-    }
-    alert(`已保存 ${done.length} 个病例`);
+      setBookStep("done");
+      setBookErr(`✅ 完成！共 ${cases.length} 个病例，成功生成并保存 ${saved} 个`);
+    } catch(e) {
+      setBookStep(""); setBookErr((e as Error).message);
+    } finally { setBookImporting(false); }
   };
 
   return (
@@ -315,80 +311,40 @@ export default function AdminGeneratePage() {
             fileInfo={bookFile ? `📄 ${bookFile.name} (${formatFileSize(bookFile.size)})` : ""}
             onFiles={(files) => { setBookFile(files[0]); setBookErr(""); setBookCases([]); }}
           />
-          <button onClick={doBookExtract} disabled={bookSplitting||!bookFile} className="btn-primary w-full text-sm mb-3">
-            {bookSplitting ? "提取文字并拆分中..." : `提取文字并拆分为独立病例${bookFile ? `（${formatFileSize(bookFile.size)}）` : ""}`}
+          <button onClick={doBookImport} disabled={bookImporting||!bookFile} className="btn-primary w-full text-sm mb-3">
+            {bookImporting
+              ? (bookStep.startsWith("generating") ? `⏳ ${bookStep}`
+                : bookStep==="extracting" ? "📖 提取文字中..."
+                : bookStep==="splitting" ? "🔍 拆分病例中..."
+                : bookStep==="saving" ? "💾 保存中..."
+                : "⏳ 处理中...")
+              : `🚀 一键导入病例书${bookFile ? `（${formatFileSize(bookFile.size)}）` : ""}`}
           </button>
           {bookErr&&<div className="flex items-start gap-2 text-sm p-3 rounded-lg mb-3 bg-[#FDE8E8] dark:bg-red-900/20 text-[#9B2C2C] dark:text-red-300"><span>⚠️</span><span>{bookErr}</span></div>}
 
-          {bookCases.length>0&&<>
-            <div className="flex flex-wrap items-center gap-2 mb-3 p-3 bg-[#F5F8FC] dark:bg-slate-800 rounded-lg border border-[#DDE5EE] dark:border-slate-700">
-              <span className="text-sm font-medium text-[#1A2332] dark:text-slate-100">📋 {bookCases.length} 个病例已拆分</span>
-              <span className="text-xs text-[#6B7F96] dark:text-slate-400">
-                已生成: {bookCases.filter(c=>c.status==="done"||c.status==="saving"||c.status==="saved").length}/{bookCases.length}
-              </span>
-              <div className="flex-1"/>
-              <button onClick={doBookGenerateAll} disabled={bookGenerating||bookCases.every(c=>c.status==="done"||c.status==="saved")} className="px-3 py-1 text-xs rounded-md bg-[#1B4F8A] dark:bg-blue-600 text-white hover:bg-[#154070] dark:hover:bg-blue-500 disabled:opacity-50 transition-colors">
-                {bookGenerating ? "⏳ 生成中..." : "⚡ 全部生成"}
-              </button>
-              <button onClick={doBookSaveAll} disabled={bookCases.filter(c=>c.status==="done").length===0} className="px-3 py-1 text-xs rounded-md bg-[#0F6E56] dark:bg-emerald-600 text-white hover:bg-[#0B5A46] dark:hover:bg-emerald-500 disabled:opacity-50 transition-colors">
-                💾 全部保存
-              </button>
-            </div>
-
-            {bookGenerating&&<div className="mb-3">
-              <div className="flex items-center justify-between mb-1"><span className="text-xs text-[#6B7F96]">生成进度</span><span className="text-xs font-medium text-[#1B4F8A]">{bookCases.filter(c=>c.status!=="pending"&&c.status!=="generating").length}/{bookCases.length}</span></div>
-              <div className="w-full bg-[#E8ECF0] dark:bg-slate-700 rounded-full h-2 overflow-hidden">
-                <div className="bg-[#1B4F8A] dark:bg-blue-600 h-full rounded-full transition-all duration-300" style={{width:`${(bookCases.filter(c=>c.status!=="pending"&&c.status!=="generating").length/bookCases.length)*100}%`}}/>
-              </div>
-            </div>}
-
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+          {bookCases.length>0&&<div className="space-y-1.5 max-h-[50vh] overflow-y-auto mt-3">
               {bookCases.map(bc=>{
                 const statusColors: Record<string,string> = {
                   pending: "bg-[#E8ECF0] dark:bg-slate-700 text-[#6B7F96] dark:text-slate-400",
-                  generating: "bg-[#EBF2FA] dark:bg-blue-900/20 text-[#1B4F8A] dark:text-blue-400",
+                  generating: "bg-[#EBF2FA] dark:bg-blue-900/20 text-[#1B4F8A] dark:text-blue-400 animate-pulse",
                   done: "bg-[#E8F4F0] dark:bg-emerald-900/20 text-[#0F6E56] dark:text-emerald-400",
                   failed: "bg-[#FDE8E8] dark:bg-red-900/20 text-[#9B2C2C] dark:text-red-400",
-                  saving: "bg-[#EBF2FA] dark:bg-blue-900/20 text-[#1B4F8A] dark:text-blue-400",
                   saved: "bg-[#E8F4F0] dark:bg-emerald-900/20 text-[#0F6E56] dark:text-emerald-400",
                 };
                 const statusLabels: Record<string,string> = {
-                  pending:"待生成", generating:"生成中...", done:"已生成", failed:"失败", saving:"保存中...", saved:"已保存",
+                  pending:"待生成", generating:"生成中", done:"已生成", failed:"失败", saved:"已保存",
                 };
                 return (
-                  <div key={bc.index} className={`p-3 rounded-lg border transition-colors ${
-                    bc.status==="saved" ? "border-[#0F6E56]/30 dark:border-emerald-700/30 bg-[#E8F4F0]/30 dark:bg-emerald-900/10"
-                    : bc.status==="failed" ? "border-[#9B2C2C]/30 dark:border-red-700/30 bg-[#FDE8E8]/30 dark:bg-red-900/10"
-                    : "border-[#DDE5EE] dark:border-slate-700 bg-white dark:bg-slate-800"
-                  }`}>
-                    <div className="flex items-start gap-3">
-                      <span className="text-lg font-bold text-[#1A2332] dark:text-slate-100 shrink-0 w-8">#{bc.index}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-[#1A2332] dark:text-slate-100 truncate">{bc.title}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-xs text-[#8FA0B4]">🖼 {bc.figure_count} 图</span>
-                          <span className="text-xs text-[#8FA0B4]">📝 {(bc.char_count/1000).toFixed(0)}K 字</span>
-                          <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${statusColors[bc.status]}`}>{statusLabels[bc.status]}</span>
-                        </div>
-                        {bc.error&&<p className="text-xs text-[#9B2C2C] dark:text-red-400 mt-1">{bc.error}</p>}
-                        {bc.generated&&<div className="mt-2">
-                          <details className="text-xs">
-                            <summary className="cursor-pointer text-[#1B4F8A] dark:text-blue-400 hover:underline">查看生成结果</summary>
-                            <pre className="mt-1 bg-[#F5F8FC] dark:bg-slate-900 rounded p-2 text-xs overflow-auto max-h-48 border border-[#DDE5EE] dark:border-slate-700">{JSON.stringify(bc.generated,null,2)}</pre>
-                          </details>
-                        </div>}
-                      </div>
-                      <div className="flex flex-col gap-1 shrink-0">
-                        {(bc.status==="pending"||bc.status==="failed")&&<button onClick={()=>doBookGenerateOne(bc.index)} disabled={bookGenerating} className="px-2 py-1 text-xs rounded bg-[#1B4F8A] dark:bg-blue-600 text-white hover:bg-[#154070] disabled:opacity-50 transition-colors whitespace-nowrap">生成</button>}
-                        {bc.status==="done"&&<button onClick={()=>doBookSaveOne(bc.index)} className="px-2 py-1 text-xs rounded bg-[#0F6E56] dark:bg-emerald-600 text-white hover:bg-[#0B5A46] transition-colors whitespace-nowrap">保存</button>}
-                        {bc.status==="saved"&&<span className="text-xs text-[#0F6E56] dark:text-emerald-400">✅</span>}
-                      </div>
-                    </div>
+                  <div key={bc.index} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#DDE5EE] dark:border-slate-700 bg-white dark:bg-slate-800 text-sm">
+                    <span className="font-bold text-[#1A2332] dark:text-slate-100 w-6">#{bc.index}</span>
+                    <span className="flex-1 truncate text-[#3D5166] dark:text-slate-300">{bc.title.slice(0,60)}</span>
+                    <span className="text-xs text-[#8FA0B4]">{bc.figure_count}图</span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${statusColors[bc.status]}`}>{statusLabels[bc.status]}</span>
+                    {bc.error&&<span className="text-xs text-[#9B2C2C] dark:text-red-400" title={bc.error}>⚠️</span>}
                   </div>
                 );
               })}
-            </div>
-          </>}
+          </div>}
         </div>}
 
         <div className="card"><h3 className="font-semibold text-[#1A2332] dark:text-slate-100 mb-2 text-sm">说明</h3><ul className="text-sm text-[#6B7F96] dark:text-slate-400 space-y-1 list-disc list-inside"><li>生成的案例默认「未发布」，在病例管理中编辑发布</li><li>PDF 通过 PDF.js 在浏览器端提取文字，不消耗服务器资源</li><li>支持拖拽上传 PDF 或图片文件</li><li>病例书导入：上传整本病例书 PDF，自动拆分为独立病例并逐个人工智能生成</li></ul></div>
