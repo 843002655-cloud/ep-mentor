@@ -50,10 +50,7 @@ export default function RootLayout({
         >
           跳到主要内容
         </a>
-        <Script
-          src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
-          strategy="afterInteractive"
-        />
+        <Script src="/pdf.min.js" strategy="afterInteractive" />
         <div id="main-content">{children}</div>
         <script
           dangerouslySetInnerHTML={{
