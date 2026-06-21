@@ -119,7 +119,7 @@ npm install    # package.json 有变化时
 npm run dev
 ```
 
-`.env.local` **不要提交 Git**，用 U 盘 / 密码管理器 / 加密笔记在电脑间同步。
+`.env.local` **不要提交 Git**，用 U 盘 / 密码管理器 / 加密笔记在电脑间同步。完整变量说明与勾选表见 **[docs/env-local-sync-checklist.md](docs/env-local-sync-checklist.md)**。
 
 ### 功能分支（可选）
 
