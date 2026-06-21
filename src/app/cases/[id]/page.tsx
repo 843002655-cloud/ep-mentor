@@ -17,6 +17,13 @@ import {
 } from "@/lib/figure-utils";
 import { getOrCreateLearnerId } from "@/lib/learner-id";
 import { ROUTES } from "@/lib/routes";
+import {
+  createTeachingState,
+  EP_STEP_LABELS,
+  normalizeTeachingState,
+  type TeachingState,
+} from "@/lib/teaching-state";
+import type { ChatReplyMeta } from "@/lib/teaching-state";
 
 interface Case {
   id: string; title: string; category: string; difficulty: string;
@@ -24,7 +31,20 @@ interface Case {
   hint: string; key_points: string[]; is_published: boolean;
   mapping_system?: string; content_json?: Record<string, unknown>;
 }
-interface Message { role: "user" | "assistant" | "system"; content: string; _uiOnly?: boolean; }
+interface Message {
+  role: "user" | "assistant" | "system";
+  content: string;
+  _uiOnly?: boolean;
+}
+
+interface ChatSession {
+  messages: Message[];
+  figIdx: number;
+  teachingState: TeachingState;
+  allDone?: boolean;
+  evaluationDone?: boolean;
+}
+
 interface Figure {
   figure_number: string; title: string; description: string;
   teaching_points: string; key_question: string; image_url?: string;
@@ -42,21 +62,42 @@ const diffColors: Record<string, string> = {
   "高级": "bg-[#FDE8E8] dark:bg-red-900/30 text-[#9B2C2C] dark:text-red-300",
 };
 
+function sessionKey(caseId: string) {
+  return `chat_session_${caseId}`;
+}
+
+function loadSession(caseId: string): ChatSession | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const saved = sessionStorage.getItem(sessionKey(caseId));
+    return saved ? (JSON.parse(saved) as ChatSession) : null;
+  } catch {
+    return null;
+  }
+}
+
+function buildWelcomeMessage(
+  title: string,
+  figure: Figure,
+  figureCount: number,
+  sourceLine: string
+): Message {
+  return {
+    role: "assistant",
+    content: `${sourceLine}欢迎来到电生理导管室。\n\n今天我们一起分析：**${title}**\n\n我们将按步骤分析，共 ${figureCount} 个关键步骤。\n\n📷 **${figure.figure_number}: ${figure.title}**\n\n${figure.description ? "📖 " + figure.description + "\n\n" : ""}🎯 ${figure.teaching_points}\n\n${figure.key_question}`,
+  };
+}
+
 export default function CaseDetailPage() {
   usePageTitle("病例详情");
   const params = useParams(); const caseId = params.id as string;
   const [caseData, setCaseData] = useState<Case | null>(null);
   const [figures, setFigures] = useState<Figure[]>([]);
   const [figIdx, setFigIdx] = useState(0);
-  const [messages, setMessages] = useState<Message[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = sessionStorage.getItem(`chat_${caseId}`);
-        return saved ? JSON.parse(saved) : [];
-      } catch { return []; }
-    }
-    return [];
-  });
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [teachingState, setTeachingState] = useState<TeachingState>(() => createTeachingState(0));
+  const [messageMeta, setMessageMeta] = useState<Record<number, ChatReplyMeta>>({});
+  const [evaluationDone, setEvaluationDone] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -138,12 +179,18 @@ export default function CaseDetailPage() {
       const rawSource = (c.content_json?.source as string) || "";
       const cleanSource = formatSource(rawSource);
       const sourceLine = cleanSource ? `📖 来源：${cleanSource}\n\n` : "";
-      if (enriched.length > 0) {
-        const f = enriched[0];
-        setMessages([{
-          role: "assistant",
-          content: `${sourceLine}欢迎来到电生理导管室。\n\n今天我们一起分析：**${c.title}**\n\n${enriched.length > 0 ? `我们将按步骤分析，共 ${enriched.length} 个关键发现。` : ""}\n\n📷 **${f.figure_number}: ${f.title}**\n\n${f.description ? "📖 " + f.description + "\n\n" : ""}🎯 ${f.teaching_points}\n\n${f.key_question}`,
-        }]);
+
+      const saved = loadSession(caseId);
+      if (saved?.messages?.length) {
+        setMessages(saved.messages);
+        setFigIdx(saved.figIdx ?? 0);
+        setTeachingState(normalizeTeachingState(saved.teachingState, saved.figIdx ?? 0));
+        setAllDone(Boolean(saved.allDone));
+        setEvaluationDone(Boolean(saved.evaluationDone));
+      } else if (enriched.length > 0) {
+        setMessages([buildWelcomeMessage(c.title, enriched[0], enriched.length, sourceLine)]);
+        setFigIdx(0);
+        setTeachingState(createTeachingState(0));
       } else {
         setMessages([{
           role: "assistant",
@@ -176,6 +223,7 @@ export default function CaseDetailPage() {
     if (idx === figIdx) return;
 
     setFigIdx(idx);
+    setTeachingState((prev) => ({ ...prev, figureIndex: idx }));
     const f = figures[idx];
     const header = `🔽 现在看向：**${f.figure_number}: ${f.title}**`;
 
@@ -202,7 +250,6 @@ export default function CaseDetailPage() {
     try {
       const ctx = { ...buildCaseCtx(), currentFigure: f as unknown as Record<string, unknown> };
       const apiMessages = messages.filter((m) => !m._uiOnly).slice(-10);
-      let fullText = "";
       const intro = await chatService.sendFigureIntroStream(
         apiMessages,
         ctx,
@@ -210,11 +257,11 @@ export default function CaseDetailPage() {
         idx,
         figures.length,
         (chunk) => {
-          fullText += chunk;
-          flushSync(() => setStreamingText(fullText));
-        }
+          flushSync(() => setStreamingText(chunk));
+        },
+        { ...teachingState, figureIndex: idx }
       );
-      const body = (intro || fullText).trim() || buildFigureIntroMessage(f);
+      const body = (intro.text || "").trim() || buildFigureIntroMessage(f);
       setMessages((prev) => {
         const idx = introPlaceholderRef.current;
         if (idx == null || idx >= prev.length) return prev;
@@ -240,11 +287,15 @@ export default function CaseDetailPage() {
     }
   };
 
-  // ── Shared send helper (avoids code duplication) ──────────────────
-  const sendMessageToAI = async (userContent: string) => {
+  const sendMessageToAI = async (
+    userContent: string,
+    opts?: { skipUserBubble?: boolean; forCompletion?: boolean }
+  ) => {
     if (sending || !caseData) return;
     const userMessage: Message = { role: "user", content: userContent };
-    setMessages((p) => [...p, userMessage]);
+    if (!opts?.skipUserBubble) {
+      setMessages((p) => [...p, userMessage]);
+    }
     setSending(true);
     setStreamingText(null);
     try {
@@ -257,19 +308,40 @@ export default function CaseDetailPage() {
         contentJson: caseData.content_json,
         currentFigure: figures[figIdx] as unknown as Record<string, unknown> || undefined,
       };
-      const apiMessages = [...messages.filter((m) => !m._uiOnly), userMessage].slice(-20);
-      let fullText = "";
-      const rawReply = await chatService.sendMessageStream(
-        apiMessages, ctx, caseId,
+      const apiMessages = [
+        ...messages.filter((m) => !m._uiOnly),
+        userMessage,
+      ].slice(-20);
+
+      const result = await chatService.sendMessageStream(
+        apiMessages,
+        ctx,
+        caseId,
         (chunk: string) => {
-          fullText += chunk;
-          flushSync(() => setStreamingText(fullText));
-        }
+          flushSync(() => setStreamingText(chunk));
+        },
+        teachingState
       );
-      const finished = fullText || rawReply;
-      let display = finished;
-      try { const p = JSON.parse(finished); display = (p.content || finished) + (p.hint ? "\n\n💡 " + p.hint : ""); } catch {}
-      setMessages((p) => [...p, { role: "assistant", content: display }]);
+
+      let display = result.text;
+      if (result.meta?.hint) {
+        display += `\n\n💡 ${result.meta.hint}`;
+      }
+
+      setMessages((p) => {
+        const next = [...p, { role: "assistant" as const, content: display }];
+        if (result.meta) {
+          setMessageMeta((prev) => ({ ...prev, [next.length - 1]: result.meta! }));
+        }
+        return next;
+      });
+
+      if (result.meta?.teachingState) {
+        setTeachingState(result.meta.teachingState);
+      }
+      if (opts?.forCompletion) {
+        setEvaluationDone(true);
+      }
       setStreamingText(null);
     } catch (err: unknown) {
       setMessages((p) => [...p, { role: "assistant", content: "抱歉：" + ((err as Error).message || "AI 暂不可用") }]);
@@ -296,19 +368,19 @@ export default function CaseDetailPage() {
     if (figures.length === 0) return;
     const f = figures[0];
     setFigIdx(0);
+    setTeachingState(createTeachingState(0));
+    setMessageMeta({});
+    setEvaluationDone(false);
     const rawSource2 = (caseData!.content_json?.source as string) || "";
     const cleanSource2 = formatSource(rawSource2);
     const sourceLine2 = cleanSource2 ? `📖 来源：${cleanSource2}\n\n` : "";
-    setMessages([{
-      role: "assistant",
-      content: `${sourceLine2}欢迎来到电生理导管室。\n\n今天我们一起分析：**${caseData!.title}**\n\n${figures.length > 0 ? `我们将按步骤分析，共 ${figures.length} 个关键发现。` : ""}\n\n📷 **${f.figure_number}: ${f.title}**\n\n${f.description ? "📖 " + f.description + "\n\n" : ""}🎯 ${f.teaching_points}\n\n${f.key_question}`,
-    }]);
+    setMessages([buildWelcomeMessage(caseData!.title, f, figures.length, sourceLine2)]);
     setAllDone(false);
     setStreamingText(null);
     setFeedbackMap({});
     if (typeof window !== "undefined") {
       try { localStorage.removeItem(`feedback_${caseId}`); } catch {}
-      try { sessionStorage.removeItem(`chat_${caseId}`); } catch {}
+      try { sessionStorage.removeItem(sessionKey(caseId)); } catch {}
     }
   };
 
@@ -319,6 +391,13 @@ export default function CaseDetailPage() {
         delete next[msgIndex];
       } else {
         next[msgIndex] = type;
+        chatService.submitFeedback({
+          caseId,
+          messageIndex: msgIndex,
+          feedback: type,
+          figureIndex: figIdx,
+          epStep: teachingState.epStep,
+        }).catch(() => {});
       }
       if (typeof window !== "undefined") {
         try { localStorage.setItem(`feedback_${caseId}`, JSON.stringify(next)); } catch {}
@@ -338,9 +417,20 @@ export default function CaseDetailPage() {
     }, () => {});
   };
 
-  const handleNextFigure = () => {
+  const handleNextFigure = async () => {
     const next = figIdx + 1;
     if (next >= figures.length) {
+      if (!evaluationDone) {
+        const userTurns = messages.filter((m) => m.role === "user").length;
+        if (userTurns >= 2) {
+          await sendMessageToAI(
+            "请对我的整体表现做一个结构化评估，包含诊断推理、知识掌握、思维系统性和改进建议四个维度。",
+            { skipUserBubble: true, forCompletion: true }
+          );
+        } else {
+          setEvaluationDone(true);
+        }
+      }
       setAllDone(true);
       return;
     }
@@ -359,18 +449,26 @@ export default function CaseDetailPage() {
     }
   }, [messages, streamingText]);
   useEffect(() => {
-    if (!allDone || !caseId || completionRecordedRef.current) return;
+    if (!allDone || !caseId || completionRecordedRef.current || !evaluationDone) return;
     completionRecordedRef.current = true;
     progressService.markCaseComplete(caseId, getOrCreateLearnerId()).catch(() => {
       completionRecordedRef.current = false;
     });
-  }, [allDone, caseId]);
-  // Save messages to sessionStorage so refresh doesn't lose conversation
+  }, [allDone, caseId, evaluationDone]);
+
   useEffect(() => {
-    if (messages.length > 0 && typeof window !== "undefined") {
-      try { sessionStorage.setItem(`chat_${caseId}`, JSON.stringify(messages)); } catch {}
-    }
-  }, [messages, caseId]);
+    if (messages.length === 0 || typeof window === "undefined") return;
+    try {
+      const payload: ChatSession = {
+        messages,
+        figIdx,
+        teachingState,
+        allDone,
+        evaluationDone,
+      };
+      sessionStorage.setItem(sessionKey(caseId), JSON.stringify(payload));
+    } catch {}
+  }, [messages, figIdx, teachingState, allDone, evaluationDone, caseId]);
   // Close lightbox on Escape key
   useEffect(() => {
     if (!lightboxImg) return;
@@ -397,6 +495,10 @@ export default function CaseDetailPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-[#1A2332] dark:text-slate-100 font-serif">{caseData.title}</h1>
           {patient.age != null ? <div className="text-sm text-[#6B7F96] dark:text-slate-400 mt-1">👤 {String(patient.gender||"")}，{String(patient.age)}岁 · 📋 {String(patient.chief_complaint||caseData.description)}</div> : null}
           {caseData.content_json?.source ? <div className="text-xs text-[#8FA0B4] dark:text-slate-500 mt-1.5 flex items-center gap-1">📖 {formatSource(caseData.content_json.source as string)}</div> : null}
+          <p className="text-xs text-[#8FA0B4] dark:text-slate-500 mt-2">
+            💬 病例模式：AI 导师会通过提问引导你思考，不会直接给出答案。需要直接解答请前往
+            {" "}<a href={ROUTES.AI_CONSULT} className="text-[#1B4F8A] dark:text-blue-400 hover:underline">AI 顾问</a>
+          </p>
         </div>
 
         {/* All Done — show key points */}
@@ -480,8 +582,28 @@ export default function CaseDetailPage() {
             {/* Right: chat */}
             <div className="lg:col-span-3 order-2">
               <div className="card">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-3 pb-3 border-b border-[#E8ECF0] dark:border-slate-700">
+                  <div className="text-xs text-[#6B7F96] dark:text-slate-400">
+                    诊断步骤 <span className="font-semibold text-[#1B4F8A] dark:text-blue-400">{teachingState.epStep}/5</span>
+                    {" · "}{EP_STEP_LABELS[teachingState.epStep]}
+                  </div>
+                  {figures.length > 0 && (
+                    <div className="text-xs text-[#6B7F96] dark:text-slate-400">
+                      当前步骤 <span className="font-semibold">{figIdx + 1}/{figures.length}</span>
+                      {figures[figIdx]?.image_url ? " · 👁️ 视觉分析已启用" : ""}
+                    </div>
+                  )}
+                </div>
                 <div ref={chatRef} onScroll={handleChatScroll} className="h-[400px] sm:h-[450px] overflow-y-auto mb-4 space-y-3 pr-2">
-                  {messages.map((msg, i) => (
+                  {messages.map((msg, i) => {
+                    const meta = messageMeta[i];
+                    const assistantClass =
+                      meta?.status === "hinting"
+                        ? "bg-[#FEF3E2] dark:bg-amber-900/20 border-amber-200 dark:border-amber-800"
+                        : meta?.status === "confirming"
+                          ? "bg-[#E8F4F0] dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800"
+                          : "bg-[#F5F8FC] dark:bg-slate-800 border-[#DDE5EE] dark:border-slate-700";
+                    return (
                     <div key={i} className={`flex gap-2 msg-enter ${msg.role==="user"?"justify-end":"justify-start"}`}>
                       {/* AI avatar */}
                       {msg.role === "assistant" && (
@@ -492,8 +614,14 @@ export default function CaseDetailPage() {
                       <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                         msg.role==="user"
                           ? "bg-[#1B4F8A] dark:bg-blue-600 text-white rounded-br-md"
-                          : "bg-[#F5F8FC] dark:bg-slate-800 text-[#3D5166] dark:text-slate-300 rounded-bl-md border border-[#DDE5EE] dark:border-slate-700"
+                          : `${assistantClass} text-[#3D5166] dark:text-slate-300 rounded-bl-md border`
                       }`}>
+                        {msg.role === "assistant" && meta?.status === "hinting" && (
+                          <div className="text-[10px] uppercase tracking-wide text-amber-700 dark:text-amber-300 mb-1">💡 提示模式</div>
+                        )}
+                        {msg.role === "assistant" && meta?.status === "confirming" && (
+                          <div className="text-[10px] uppercase tracking-wide text-emerald-700 dark:text-emerald-300 mb-1">✅ 理解确认</div>
+                        )}
                         <Markdown text={msg.content} />
                         {msg.role === "assistant" && !msg._uiOnly && (
                           <div className="flex items-center gap-1 mt-2 pt-1.5 border-t border-[#DDE5EE] dark:border-slate-600">
@@ -523,7 +651,8 @@ export default function CaseDetailPage() {
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                   {streamingText !== null && (
                     <div className="flex gap-2 justify-start">
                       <div className="w-7 h-7 rounded-full bg-[#1B4F8A] dark:bg-blue-600 flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5">⚡</div>

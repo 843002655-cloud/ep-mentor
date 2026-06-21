@@ -5,6 +5,7 @@ export const ANALYTICS_EVENT_TYPES = [
   "register",
   "case_complete",
   "wechat_login",
+  "chat_feedback",
 ] as const;
 
 export type AnalyticsEventType = (typeof ANALYTICS_EVENT_TYPES)[number];

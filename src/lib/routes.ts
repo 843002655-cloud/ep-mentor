@@ -51,6 +51,7 @@ export const ROUTES = {
   API_CASES: "/api/cases",
   API_CASE: (id: string) => `/api/cases/${id}`,
   API_CHAT: "/api/chat",
+  API_CHAT_FEEDBACK: "/api/chat/feedback",
   API_GENERATE_CASE: "/api/generate-case",
   API_PROGRESS: "/api/progress",
   API_PROGRESS_COMPLETE: "/api/progress/complete",
