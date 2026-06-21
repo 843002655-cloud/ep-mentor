@@ -34,3 +34,20 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# batch pipeline artifacts
+/batch-output/
+/batch-output-v3/
+/0607/
+
+# local deploy archives
+*.tar.gz
+*-deploy*.tar.gz
+
+# large script outputs (keep on server only)
+/scripts/extracted_figures/
+
+# accidental server artifacts
+app.log
+/npm
+/pm2

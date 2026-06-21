@@ -55,7 +55,7 @@ export default function Typewriter({
       {!allComplete && (
         <div className="mb-1">
           {currentText}
-          <span className="inline-block w-1.5 h-4 bg-[#1B4F8A] ml-0.5 animate-pulse" />
+          <span className="inline-block w-1.5 h-4 bg-[#1B4F8A] dark:bg-blue-400 ml-0.5 animate-pulse" />
         </div>
       )}
     </div>

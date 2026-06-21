@@ -35,8 +35,8 @@ const features = [
   },
   {
     icon: "🫀",
-    title: "3D 心脏电传导动画",
-    desc: "可视化激动传导路径，直观理解折返环形成和消融靶点定位的底层逻辑。",
+    title: "3D 心脏解剖模型",
+    desc: "交互式三维心脏模型，直观理解心腔结构和消融靶点空间关系。",
   },
   {
     icon: "🏥",
@@ -99,12 +99,27 @@ const diffBadge: Record<string, string> = {
 export default function Home() {
   usePageTitle("首页");
   const [featuredCases, setFeaturedCases] = useState<{ id: string; title: string; category: string; difficulty: string; description: string }[]>([]);
+  const [allCasesCount, setAllCasesCount] = useState(0);
+  const [diffCounts, setDiffCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    caseService.getCases().then((cases) => {
+    caseService.getCases().then(({ cases }) => {
       setFeaturedCases(cases.slice(0, 3));
+      setAllCasesCount(cases.length);
+      const dc: Record<string, number> = {};
+      for (const c of cases) { dc[c.difficulty] = (dc[c.difficulty] || 0) + 1; }
+      setDiffCounts(dc);
     }).catch(() => {});
   }, []);
+
+  // Update learning path with real counts
+  const learningPathLive = learningPath.map((p) => {
+    let count = p.cases;
+    if (p.phase === "Phase 1") count = diffCounts["基础"] || count;
+    else if (p.phase === "Phase 2") count = diffCounts["进阶"] || count;
+    else if (p.phase === "Phase 3" || p.phase === "Phase 4") count = (diffCounts["高级"] || 0) ? diffCounts["高级"] : count;
+    return { ...p, cases: count };
+  });
 
   return (
     <AppLayout>
@@ -135,9 +150,9 @@ export default function Home() {
               </div>
 
               <p className="text-sm text-[#8FA0B4] dark:text-slate-500 flex items-center gap-2 flex-wrap">
-                <span>🏥 已有 200+ 位电生理医生加入</span>
+                <span>🏥 众多电生理医生已加入</span>
                 <span className="text-[#C5D3E0] dark:text-slate-600 hidden sm:inline">·</span>
-                <span className="hidden sm:inline">📋 50+ 精选病例</span>
+                <span className="hidden sm:inline">📋 {allCasesCount || ""} 精选病例</span>
                 <span className="text-[#C5D3E0] dark:text-slate-600 hidden sm:inline">·</span>
                 <span className="hidden sm:inline">🆓 每日 20 次免费对话</span>
               </p>
@@ -230,7 +245,7 @@ export default function Home() {
           {/* Vertical line (desktop) */}
           <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-px bg-[#E8ECF0] dark:bg-slate-700 -translate-x-1/2" />
           <div className="space-y-8 lg:space-y-0">
-            {learningPath.map((step, i) => (
+            {learningPathLive.map((step, i) => (
               <div
                 key={step.role}
                 className={`relative lg:grid lg:grid-cols-2 lg:gap-12 items-center ${
@@ -265,7 +280,7 @@ export default function Home() {
       <section className="bg-[#1B4F8A] dark:bg-blue-600 py-16">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold text-white mb-4 font-serif">准备好提升你的电生理思维了吗？</h2>
-          <p className="text-white/80 mb-8 text-lg">加入 200+ 位同行，用苏格拉底的方式重新学习电生理</p>
+          <p className="text-white/80 mb-8 text-lg">与同行一起，用苏格拉底的方式重新学习电生理</p>
           <Link href={ROUTES.AUTH_REGISTER} className="inline-block bg-white dark:bg-slate-100 text-[#1B4F8A] dark:text-blue-700 hover:bg-gray-100 dark:hover:bg-slate-200 font-bold py-3 px-10 rounded-lg transition-colors text-lg">
             免费开始 →
           </Link>

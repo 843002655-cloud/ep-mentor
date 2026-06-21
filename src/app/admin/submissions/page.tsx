@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppLayout from "@/components/AppLayout";
+import AdminNav from "@/components/AdminNav";
 
 interface Submission { id: string; doctor_name: string; hospital: string; case_title: string; case_content: string; status: string; created_at: string; }
 const statusColors: Record<string, string> = { pending: "bg-[#FEF3E2] dark:bg-amber-900/30 text-[#854F0B] dark:text-amber-300", approved: "bg-[#E8F4F0] dark:bg-emerald-900/30 text-[#0F6E56] dark:text-emerald-300", rejected: "bg-[#FDE8E8] dark:bg-red-900/30 text-[#9B2C2C] dark:text-red-300" };
@@ -27,6 +28,7 @@ export default function AdminSubmissionsPage() {
 
   return (
     <AppLayout>
+      <AdminNav />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex items-center justify-between mb-8">
           <div><h1 className="text-3xl font-bold text-[#1A2332] mb-2 font-serif">投稿审核</h1><p className="text-[#6B7F96]">查看和审核医生提交的病例</p></div>

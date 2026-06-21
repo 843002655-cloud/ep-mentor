@@ -4,11 +4,19 @@ import { useEffect, useState, useRef } from "react";
 import { flushSync } from "react-dom";
 import { useParams } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
-import { caseService, chatService } from "@/lib/services";
+import { caseService, chatService, progressService } from "@/lib/services";
 import { SkeletonBox } from "@/components/Skeleton";
 import Markdown from "@/components/Markdown";
 import type { CaseInput } from "@/lib/services";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
+import { formatSource } from "@/lib/source-utils";
+import {
+  buildFigureIntroMessage,
+  enrichFiguresFromContent,
+  isGenericFigure,
+} from "@/lib/figure-utils";
+import { getOrCreateLearnerId } from "@/lib/learner-id";
+import { ROUTES } from "@/lib/routes";
 
 interface Case {
   id: string; title: string; category: string; difficulty: string;
@@ -26,7 +34,7 @@ const catColors: Record<string, string> = {
   SVT: "bg-[#EBF2FA] dark:bg-blue-900/30 text-[#1B4F8A] dark:text-blue-300",
   VT: "bg-[#FDE8E8] dark:bg-red-900/30 text-[#9B2C2C] dark:text-red-300",
   AF: "bg-[#FEF3E2] dark:bg-amber-900/30 text-[#854F0B] dark:text-amber-300",
-  AFL: "bg-[#EDE9FB] dark:bg-purple-900/30 text-[#4C3D9E] dark:text-purple-300",
+  // AFL merged into AF
 };
 const diffColors: Record<string, string> = {
   "基础": "bg-[#E8F4F0] dark:bg-emerald-900/30 text-[#0F6E56] dark:text-emerald-300",
@@ -65,11 +73,17 @@ export default function CaseDetailPage() {
   const [isComposing, setIsComposing] = useState(false);
   const [lightboxImg, setLightboxImg] = useState<string | null>(null);
   const [allDone, setAllDone] = useState(false);
+  const [introGenerating, setIntroGenerating] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
+  const completionRecordedRef = useRef(false);
+  const introPlaceholderRef = useRef<number | null>(null);
   const [copied, setCopied] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
+    setLoading(true);
+    setLoadError("");
     caseService.getCaseById(caseId).then((c) => {
       setCaseData(c as Case);
       const content = (c as Case).content_json;
@@ -117,35 +131,113 @@ export default function CaseDetailPage() {
           });
         });
       }
-      extracted.unshift(introFigure);
-      setFigures(extracted);
+      const enrichedDb = enrichFiguresFromContent(extracted, content);
+      const enriched: Figure[] = [introFigure, ...enrichedDb];
+      setFigures(enriched);
 
-      if (extracted.length > 0) {
-        const f = extracted[0];
+      const rawSource = (c.content_json?.source as string) || "";
+      const cleanSource = formatSource(rawSource);
+      const sourceLine = cleanSource ? `📖 来源：${cleanSource}\n\n` : "";
+      if (enriched.length > 0) {
+        const f = enriched[0];
         setMessages([{
           role: "assistant",
-          content: `欢迎来到电生理导管室。\n\n今天我们一起分析：**${c.title}**\n\n${extracted.length > 0 ? `我们将按步骤分析，共 ${extracted.length} 个关键发现。` : ""}\n\n📷 **${f.figure_number}: ${f.title}**\n\n${f.description ? "📖 " + f.description + "\n\n" : ""}🎯 ${f.teaching_points}\n\n${f.key_question}`,
+          content: `${sourceLine}欢迎来到电生理导管室。\n\n今天我们一起分析：**${c.title}**\n\n${enriched.length > 0 ? `我们将按步骤分析，共 ${enriched.length} 个关键发现。` : ""}\n\n📷 **${f.figure_number}: ${f.title}**\n\n${f.description ? "📖 " + f.description + "\n\n" : ""}🎯 ${f.teaching_points}\n\n${f.key_question}`,
         }]);
       } else {
         setMessages([{
           role: "assistant",
-          content: `欢迎来到电生理导管室。\n\n今天的病例是：**${c.title}**\n\n${c.description}\n\n${c.question || "请分享你的初步分析。"}\n\n💡 ${c.hint || ""}`,
+          content: `${sourceLine}欢迎来到电生理导管室。\n\n今天的病例是：**${c.title}**\n\n${c.description}\n\n${c.question || "请分享你的初步分析。"}\n\n💡 ${c.hint || ""}`,
         }]);
       }
+      setLoading(false);
+    }).catch(() => {
+      setLoadError("加载病例失败，请返回病例库重试");
       setLoading(false);
     });
   }, [caseId]);
 
-  const jumpToFigure = (idx: number) => {
-    if (idx < 0 || idx >= figures.length) return;
+  const buildCaseCtx = () => ({
+    title: caseData!.title,
+    category: caseData!.category as CaseInput["category"],
+    difficulty: caseData!.difficulty as CaseInput["difficulty"],
+    description: caseData!.description,
+    ecg_findings: caseData!.ecg_findings,
+    question: caseData!.question,
+    hint: caseData!.hint,
+    key_points: caseData!.key_points,
+    is_published: caseData!.is_published,
+    contentJson: caseData!.content_json,
+    currentFigure: figures[figIdx] as unknown as Record<string, unknown> || undefined,
+  });
+
+  const jumpToFigure = async (idx: number) => {
+    if (!caseData || idx < 0 || idx >= figures.length || introGenerating || sending) return;
+    if (idx === figIdx) return;
+
     setFigIdx(idx);
     const f = figures[idx];
-    // Append transition message instead of replacing history
-    setMessages((prev) => [...prev, {
-      role: "assistant" as const,
-      content: `🔽 现在看向：**${f.figure_number}: ${f.title}**\n\n${f.description ? "📖 " + f.description + "\n\n" : ""}🎯 教学要点：${f.teaching_points}\n\n${f.key_question}`,
-      _uiOnly: true,
-    }]);
+    const header = `🔽 现在看向：**${f.figure_number}: ${f.title}**`;
+
+    if (!isGenericFigure(f)) {
+      setMessages((prev) => [...prev, {
+        role: "assistant" as const,
+        content: buildFigureIntroMessage(f),
+      }]);
+      return;
+    }
+
+    // 占位提问 → 用 AI 结合病例上下文生成针对性苏格拉底开场
+    setIntroGenerating(true);
+    setMessages((prev) => {
+      introPlaceholderRef.current = prev.length;
+      return [...prev, {
+        role: "assistant" as const,
+        content: `${header}\n\n⏳ 正在准备这一步的引导...`,
+        _uiOnly: true,
+      }];
+    });
+    setStreamingText(null);
+
+    try {
+      const ctx = { ...buildCaseCtx(), currentFigure: f as unknown as Record<string, unknown> };
+      const apiMessages = messages.filter((m) => !m._uiOnly).slice(-10);
+      let fullText = "";
+      const intro = await chatService.sendFigureIntroStream(
+        apiMessages,
+        ctx,
+        caseId,
+        idx,
+        figures.length,
+        (chunk) => {
+          fullText += chunk;
+          flushSync(() => setStreamingText(fullText));
+        }
+      );
+      const body = (intro || fullText).trim() || buildFigureIntroMessage(f);
+      setMessages((prev) => {
+        const idx = introPlaceholderRef.current;
+        if (idx == null || idx >= prev.length) return prev;
+        const next = [...prev];
+        next[idx] = { role: "assistant", content: `${header}\n\n${body}` };
+        return next;
+      });
+      setStreamingText(null);
+    } catch {
+      setMessages((prev) => {
+        const idx = introPlaceholderRef.current;
+        if (idx == null || idx >= prev.length) return prev;
+        const next = [...prev];
+        next[idx] = {
+          role: "assistant",
+          content: buildFigureIntroMessage(f),
+        };
+        return next;
+      });
+      setStreamingText(null);
+    } finally {
+      setIntroGenerating(false);
+    }
   };
 
   // ── Shared send helper (avoids code duplication) ──────────────────
@@ -165,7 +257,6 @@ export default function CaseDetailPage() {
         contentJson: caseData.content_json,
         currentFigure: figures[figIdx] as unknown as Record<string, unknown> || undefined,
       };
-      // Filter out UI-only transition messages before sending to API
       const apiMessages = [...messages.filter((m) => !m._uiOnly), userMessage].slice(-20);
       let fullText = "";
       const rawReply = await chatService.sendMessageStream(
@@ -205,9 +296,12 @@ export default function CaseDetailPage() {
     if (figures.length === 0) return;
     const f = figures[0];
     setFigIdx(0);
+    const rawSource2 = (caseData!.content_json?.source as string) || "";
+    const cleanSource2 = formatSource(rawSource2);
+    const sourceLine2 = cleanSource2 ? `📖 来源：${cleanSource2}\n\n` : "";
     setMessages([{
       role: "assistant",
-      content: `欢迎来到电生理导管室。\n\n今天我们一起分析：**${caseData!.title}**\n\n${figures.length > 0 ? `我们将按步骤分析，共 ${figures.length} 个关键发现。` : ""}\n\n📷 **${f.figure_number}: ${f.title}**\n\n${f.description ? "📖 " + f.description + "\n\n" : ""}🎯 ${f.teaching_points}\n\n${f.key_question}`,
+      content: `${sourceLine2}欢迎来到电生理导管室。\n\n今天我们一起分析：**${caseData!.title}**\n\n${figures.length > 0 ? `我们将按步骤分析，共 ${figures.length} 个关键发现。` : ""}\n\n📷 **${f.figure_number}: ${f.title}**\n\n${f.description ? "📖 " + f.description + "\n\n" : ""}🎯 ${f.teaching_points}\n\n${f.key_question}`,
     }]);
     setAllDone(false);
     setStreamingText(null);
@@ -264,6 +358,13 @@ export default function CaseDetailPage() {
       chatRef.current.scrollTo(0, chatRef.current.scrollHeight);
     }
   }, [messages, streamingText]);
+  useEffect(() => {
+    if (!allDone || !caseId || completionRecordedRef.current) return;
+    completionRecordedRef.current = true;
+    progressService.markCaseComplete(caseId, getOrCreateLearnerId()).catch(() => {
+      completionRecordedRef.current = false;
+    });
+  }, [allDone, caseId]);
   // Save messages to sessionStorage so refresh doesn't lose conversation
   useEffect(() => {
     if (messages.length > 0 && typeof window !== "undefined") {
@@ -279,6 +380,7 @@ export default function CaseDetailPage() {
   }, [lightboxImg]);
 
   if (loading) return <AppLayout><div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8"><div className="card mb-4"><div className="flex gap-2 mb-2"><SkeletonBox className="h-5 w-12 rounded-full" /><SkeletonBox className="h-5 w-10 rounded-full" /></div><SkeletonBox className="h-7 w-64 mb-1" /><SkeletonBox className="h-4 w-48" /></div><div className="grid lg:grid-cols-5 gap-4"><div className="lg:col-span-2"><div className="card p-3"><SkeletonBox className="h-4 w-48 mb-3" /><SkeletonBox className="h-60 w-full mb-3" /><div className="flex justify-between"><SkeletonBox className="h-4 w-16" /><SkeletonBox className="h-4 w-10" /><SkeletonBox className="h-4 w-16" /></div></div></div><div className="lg:col-span-3"><div className="card"><div className="h-[400px] sm:h-[450px] space-y-3 mb-4"><SkeletonBox className="h-16 w-3/4 ml-auto" /><SkeletonBox className="h-20 w-3/4" /><SkeletonBox className="h-16 w-2/3" /></div><div className="flex gap-2"><SkeletonBox className="flex-1 h-16 rounded-lg" /><SkeletonBox className="h-10 w-16 rounded-lg" /></div></div></div></div></div></AppLayout>;
+  if (loadError) return <AppLayout><div className="max-w-4xl mx-auto px-4 py-12 text-center"><p className="text-[#6B7F96] dark:text-slate-400 mb-4">{loadError}</p><a href={ROUTES.CASES} className="text-[#1B4F8A] dark:text-blue-400 hover:underline">← 返回病例库</a></div></AppLayout>;
   if (!caseData) return <AppLayout><div className="max-w-4xl mx-auto px-4 py-12 text-center text-[#6B7F96] dark:text-slate-400">病例未找到</div></AppLayout>;
 
   const patient = (caseData.content_json?.patient || {}) as Record<string, unknown>;
@@ -294,6 +396,7 @@ export default function CaseDetailPage() {
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#1A2332] dark:text-slate-100 font-serif">{caseData.title}</h1>
           {patient.age != null ? <div className="text-sm text-[#6B7F96] dark:text-slate-400 mt-1">👤 {String(patient.gender||"")}，{String(patient.age)}岁 · 📋 {String(patient.chief_complaint||caseData.description)}</div> : null}
+          {caseData.content_json?.source ? <div className="text-xs text-[#8FA0B4] dark:text-slate-500 mt-1.5 flex items-center gap-1">📖 {formatSource(caseData.content_json.source as string)}</div> : null}
         </div>
 
         {/* All Done — show key points */}
@@ -326,7 +429,7 @@ export default function CaseDetailPage() {
               {figures.length > 1 && (
                 <div className="flex items-center gap-1 mb-3 overflow-x-auto pb-1">
                   {figures.map((f, i) => (
-                    <button key={i} onClick={() => jumpToFigure(i)}
+                    <button key={i} onClick={() => void jumpToFigure(i)} disabled={introGenerating}
                       className={`shrink-0 px-2.5 py-1 rounded text-xs font-medium ${
                         i < figIdx ? "bg-[#E8F4F0] dark:bg-emerald-900/30 text-[#0F6E56] dark:text-emerald-300"
                         : i === figIdx ? "bg-[#1B4F8A] dark:bg-blue-600 text-white"
@@ -348,17 +451,25 @@ export default function CaseDetailPage() {
                       loading="lazy"
                       onClick={() => setLightboxImg(figures[figIdx].image_url || null)}
                       className="w-full rounded-lg mb-3 border border-[#E8ECF0] dark:border-slate-700 cursor-zoom-in hover:opacity-95 transition-opacity" />
-                  ) : (
-                    <div className="bg-[#F5F8FC] dark:bg-slate-800 rounded-lg mb-3 h-40 flex items-center justify-center text-3xl">
-                      📊
+                  ) : figures[figIdx].figure_number === "病例背景" ? (
+                    <div className="bg-[#F5F8FC] dark:bg-slate-800 rounded-lg mb-3 p-4 border border-dashed border-[#C5D3E0] dark:border-slate-600">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#E8F0F8] dark:bg-blue-900/40 flex items-center justify-center text-lg shrink-0">👤</div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-[#6B7F96] dark:text-slate-400 mb-1">文字背景 · 无需配图</p>
+                          <p className="text-sm text-[#3D5166] dark:text-slate-300 leading-relaxed">{figures[figIdx].description || "暂无病史描述"}</p>
+                        </div>
+                      </div>
                     </div>
+                  ) : (
+                    <div className="bg-[#F5F8FC] dark:bg-slate-800 rounded-lg mb-3 h-24 flex items-center justify-center text-xs text-[#8FA0B4] dark:text-slate-500">暂无配图</div>
                   )}
                   {figures.length > 1 && (
                     <div className="flex items-center justify-between text-xs">
-                      <button onClick={() => jumpToFigure(figIdx-1)} disabled={figIdx===0}
+                      <button onClick={() => void jumpToFigure(figIdx-1)} disabled={figIdx===0 || introGenerating}
                         className="text-[#1B4F8A] dark:text-blue-400 disabled:opacity-30 hover:underline">← 上一张</button>
                       <span className="text-[#8FA0B4] dark:text-slate-500">{figIdx+1}/{figures.length}</span>
-                      <button onClick={handleNextFigure}
+                      <button onClick={() => void handleNextFigure()} disabled={introGenerating}
                         className="text-[#1B4F8A] dark:text-blue-400 hover:underline">下一张 →</button>
                     </div>
                   )}
@@ -422,7 +533,7 @@ export default function CaseDetailPage() {
                       </div>
                     </div>
                   )}
-                  {sending && streamingText === null && (
+                  {(sending || introGenerating) && streamingText === null && (
                     <div className="flex gap-2 justify-start">
                       <div className="w-7 h-7 rounded-full bg-[#1B4F8A] dark:bg-blue-600 flex items-center justify-center text-white text-xs font-bold shrink-0">⚡</div>
                       <div className="bg-[#F5F8FC] dark:bg-slate-800 border border-[#DDE5EE] dark:border-slate-700 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1.5">
@@ -438,9 +549,9 @@ export default function CaseDetailPage() {
                     onCompositionStart={() => setIsComposing(true)}
                     onCompositionEnd={() => setIsComposing(false)}
                     onKeyDown={(e)=>{if(e.key==="Enter"&&!e.shiftKey&&!isComposing){e.preventDefault();handleSend();}}}
-                    placeholder="输入你的分析...（Enter 发送，Shift+Enter 换行）" rows={4} disabled={sending}
+                    placeholder="输入你的分析...（Enter 发送，Shift+Enter 换行）" rows={4} disabled={sending || introGenerating}
                     className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-[#C5D3E0] dark:border-slate-600 rounded-lg text-sm text-[#1A2332] dark:text-slate-100 placeholder-[#8FA0B4] dark:placeholder-slate-500 focus:outline-none focus:border-[#1B4F8A] dark:focus:border-blue-400 resize-none" />
-                  <button onClick={handleSend} disabled={sending||!input.trim()} className="btn-primary self-end text-sm px-4">发送</button>
+                  <button onClick={handleSend} disabled={sending || introGenerating || !input.trim()} className="btn-primary self-end text-sm px-4">发送</button>
                 </div>
                 {/* Quick action buttons */}
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -465,7 +576,7 @@ export default function CaseDetailPage() {
                 {figures.length > 0 && figIdx < figures.length - 1 && (
                   <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[#E8ECF0] dark:border-slate-700">
                     <span className="text-xs text-[#8FA0B4] dark:text-slate-500">分析完当前步骤后：</span>
-                    <button onClick={handleNextFigure} className="text-xs px-3 py-1 bg-[#EBF2FA] dark:bg-slate-700 text-[#1B4F8A] dark:text-blue-400 rounded-lg hover:bg-[#1B4F8A] dark:hover:bg-blue-600 hover:text-white transition-colors">
+                    <button onClick={handleNextFigure} disabled={introGenerating} className="text-xs px-3 py-1 bg-[#EBF2FA] dark:bg-slate-700 text-[#1B4F8A] dark:text-blue-400 rounded-lg hover:bg-[#1B4F8A] dark:hover:bg-blue-600 hover:text-white transition-colors">
                       下一步 →
                     </button>
                   </div>

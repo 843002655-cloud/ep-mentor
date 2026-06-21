@@ -1,7 +1,9 @@
 "use client";
 
+import { EP_MENTOR_PRODUCT } from "@/lib/case-product";
 import { useState } from "react";
 import AppLayout from "@/components/AppLayout";
+import AdminNav from "@/components/AdminNav";
 import { caseService } from "@/lib/services";
 
 const selClass = "w-full px-3 py-2 bg-white dark:bg-slate-800 border border-[#C5D3E0] dark:border-slate-600 rounded text-sm text-[#1A2332] dark:text-slate-100 focus:outline-none focus:border-[#1B4F8A] dark:focus:border-blue-400";
@@ -175,7 +177,7 @@ export default function CreateCasePage() {
         key_points: c.key_points || [],
         is_published: false,
         mapping_system: c.mapping_system || "",
-        content_json: c as Record<string, unknown>,
+        content_json: { ...(c as Record<string, unknown>), product: EP_MENTOR_PRODUCT },
       } as never);
       setResult(""); setMsg("");
       alert("病例已保存！");
@@ -185,6 +187,7 @@ export default function CreateCasePage() {
 
   return (
     <AppLayout>
+      <AdminNav />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <h1 className="text-3xl font-bold text-[#1A2332] mb-2 font-serif">创建新病例</h1>
         <p className="text-[#6B7F96] mb-6">上传素材，AI 自动生成苏格拉底式互动教学病例</p>
@@ -245,7 +248,7 @@ export default function CreateCasePage() {
             </div>
             <label className="block text-xs text-[#3D5166] mb-1">分类</label>
             <select value={category} onChange={(e) => setCategory(e.target.value)} className={`${selClass} mb-2`}>
-              {["SVT", "VT", "AF", "AFL"].map((o) => <option key={o}>{o}</option>)}
+              {["SVT", "VT", "AF"].map((o) => <option key={o}>{o}</option>)}
             </select>
             <label className="block text-xs text-[#3D5166] mb-1">难度</label>
             <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className={selClass}>

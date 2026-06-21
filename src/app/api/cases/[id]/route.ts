@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/api-utils";
 import { caseUpdateSchema, formatZodErrors } from "@/lib/validators";
+import { isEcgAcademyCase } from "@/lib/case-product";
+
+export const dynamic = "force-dynamic";
 
 // GET /api/cases/[id] — single case (published only for non-admin)
 export async function GET(
@@ -24,6 +27,11 @@ export async function GET(
       return NextResponse.json({ error: "案例不存在或未发布" }, { status: 404 });
     }
     if (!data) {
+      return NextResponse.json({ error: "案例不存在或未发布" }, { status: 404 });
+    }
+
+    const record = data as Record<string, unknown>;
+    if (isEcgAcademyCase(record.content_json as Record<string, unknown> | undefined)) {
       return NextResponse.json({ error: "案例不存在或未发布" }, { status: 404 });
     }
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppLayout from "@/components/AppLayout";
+import AdminNav from "@/components/AdminNav";
 import { caseService } from "@/lib/services";
 import { SkeletonPage } from "@/components/Skeleton";
 import type { CaseInput } from "@/lib/services";
@@ -9,7 +10,7 @@ import type { CaseInput } from "@/lib/services";
 interface Case { id: string; title: string; category: string; difficulty: string; description: string; ecg_findings: string[]; question: string; hint: string; key_points: string[]; is_published: boolean; mapping_system?: string; video_url?: string; }
 
 const empty: CaseInput = { title: "", category: "SVT", difficulty: "基础", description: "", ecg_findings: [""], question: "", hint: "", key_points: [""], is_published: false, mapping_system: "", video_url: "" };
-const catColors: Record<string, string> = { SVT: "bg-[#EBF2FA] text-[#1B4F8A]", VT: "bg-[#FDE8E8] text-[#9B2C2C]", AF: "bg-[#FEF3E2] text-[#854F0B]", AFL: "bg-[#EDE9FB] text-[#4C3D9E]" };
+const catColors: Record<string, string> = { SVT: "bg-[#EBF2FA] text-[#1B4F8A]", VT: "bg-[#FDE8E8] text-[#9B2C2C]", AF: "bg-[#FEF3E2] text-[#854F0B]" };
 const inputClass = "w-full px-3 py-2 bg-white dark:bg-slate-800 border border-[#C5D3E0] dark:border-slate-600 rounded text-[#1A2332] dark:text-slate-100 text-sm focus:outline-none focus:border-[#1B4F8A] dark:focus:border-blue-400";
 
 export default function AdminCasesPage() {
@@ -20,7 +21,11 @@ export default function AdminCasesPage() {
   const [isNew, setIsNew] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const fetchCases = async () => { setCases(await caseService.getCases()); setLoading(false); };
+  const fetchCases = async () => {
+    const { cases } = await caseService.getCases();
+    setCases(cases);
+    setLoading(false);
+  };
   useEffect(() => { fetchCases(); }, []);
 
   const handleEdit = (c: Case) => { setEditingId(c.id); setForm({ title: c.title, category: c.category as CaseInput["category"], difficulty: c.difficulty as CaseInput["difficulty"], description: c.description, ecg_findings: c.ecg_findings || [""], question: c.question, hint: c.hint, key_points: c.key_points || [""], is_published: c.is_published, mapping_system: c.mapping_system || "", video_url: c.video_url || "" }); setIsNew(false); };
@@ -36,6 +41,7 @@ export default function AdminCasesPage() {
 
   return (
     <AppLayout>
+      <AdminNav />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8"><div><h1 className="text-2xl sm:text-3xl font-bold text-[#1A2332] dark:text-slate-100 mb-1 sm:mb-2 font-serif">病例管理</h1><p className="text-[#6B7F96] dark:text-slate-400 text-sm">增删改查病例</p></div><div className="flex items-center gap-2"><a href="/admin/generate" className="btn-primary text-sm px-4">🤖 AI 生成</a><button onClick={handleNew} className="btn-secondary text-sm px-3">+ 新建</button></div></div>
         {(isNew || editingId) && (
@@ -43,7 +49,7 @@ export default function AdminCasesPage() {
             <h2 className="text-xl font-semibold text-[#1A2332] dark:text-slate-100 mb-4">{isNew ? "新建病例" : "编辑病例"}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div><label className="block text-sm font-medium text-[#3D5166] dark:text-slate-300 mb-1">标题</label><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass} /></div>
-              <div><label className="block text-sm font-medium text-[#3D5166] dark:text-slate-300 mb-1">分类</label><select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as CaseInput["category"] })} className={inputClass}>{["SVT","VT","AF","AFL"].map(o=><option key={o} value={o}>{o}</option>)}</select></div>
+              <div><label className="block text-sm font-medium text-[#3D5166] dark:text-slate-300 mb-1">分类</label><select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as CaseInput["category"] })} className={inputClass}>{["SVT","VT","AF"].map(o=><option key={o} value={o}>{o}</option>)}</select></div>
               <div><label className="block text-sm font-medium text-[#3D5166] dark:text-slate-300 mb-1">难度</label><select value={form.difficulty} onChange={(e) => setForm({ ...form, difficulty: e.target.value as CaseInput["difficulty"] })} className={inputClass}>{["基础","进阶","高级"].map(o=><option key={o} value={o}>{o}</option>)}</select></div>
               <div><label className="block text-sm font-medium text-[#3D5166] dark:text-slate-300 mb-1">标测系统</label><select value={form.mapping_system || ""} onChange={(e) => setForm({ ...form, mapping_system: e.target.value })} className={inputClass}><option value="">未指定</option>{["Carto","EnSite","Rhythmia","Other"].map(o=><option key={o} value={o}>{o}</option>)}</select></div>
               <div><label className="block text-sm font-medium text-[#3D5166] dark:text-slate-300 mb-1">视频链接（可选）</label><input value={form.video_url || ""} onChange={(e) => setForm({ ...form, video_url: e.target.value })} placeholder="https://..." className={inputClass} /></div>

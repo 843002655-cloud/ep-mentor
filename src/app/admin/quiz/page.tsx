@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import AppLayout from "@/components/AppLayout";
+import AdminNav from "@/components/AdminNav";
 
 interface QuizQuestion { id: string; question: string; options: string[]; correct: number; explanation: string; category: string; }
 const empty = { question: "", options: ["", "", "", ""], correct: 0, explanation: "", category: "SVT" };
-const cats = ["SVT", "VT", "AF", "AFL", "综合"];
+const cats = ["SVT", "VT", "AF", "综合"];
 const inputClass = "w-full px-3 py-2 bg-white dark:bg-slate-800 border border-[#C5D3E0] dark:border-slate-600 rounded text-[#1A2332] dark:text-slate-100 text-sm focus:outline-none focus:border-[#1B4F8A] dark:focus:border-blue-400";
 
 export default function AdminQuizPage() {
@@ -33,6 +34,7 @@ export default function AdminQuizPage() {
 
   return (
     <AppLayout>
+      <AdminNav />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex items-center justify-between mb-8"><div><h1 className="text-3xl font-bold text-[#1A2332] mb-2 font-serif">测验管理</h1><p className="text-[#6B7F96]">管理知识测验题库（共 {questions.length} 题）</p></div><button onClick={handleNew} className="btn-secondary">+ 添加题目</button></div>
         {(isNew || editingId) && (

@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
-
-const deepseek = new OpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY!,
-  baseURL: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com",
-});
-const MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
+import { deepseek, DEEPSEEK_MODEL } from "@/lib/deepseek";
+import { requireAdminApi } from "@/lib/api-utils";
 
 function buildPrompt(imageCount: number): string {
   return `# Role
@@ -45,7 +40,7 @@ function buildPrompt(imageCount: number): string {
 # Output JSON Schema
 {
   "title": "中文案例标题",
-  "category": "SVT/VT/AF/AFL",
+  "category": "SVT/VT/AF",
   "difficulty": "基础/进阶/高级",
   "source": "文献出处（原文引用，可保留英文）",
   "patient": {
@@ -88,6 +83,9 @@ function buildPrompt(imageCount: number): string {
 
 export async function POST(request: NextRequest) {
   try {
+    const denied = await requireAdminApi(request);
+    if (denied) return denied;
+
     const { text, imageUrls, videoUrl } = await request.json();
     const imageCount = (imageUrls as string[])?.length || 0;
 
@@ -96,7 +94,7 @@ export async function POST(request: NextRequest) {
     }
 
     const response = await deepseek.chat.completions.create({
-      model: MODEL,
+      model: DEEPSEEK_MODEL,
       max_tokens: 8192,
       temperature: 0.5,
       response_format: { type: "json_object" },

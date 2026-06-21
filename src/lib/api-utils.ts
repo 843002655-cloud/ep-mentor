@@ -1,4 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
+import { NextRequest, NextResponse } from "next/server";
+import { getAdminEmail } from "@/lib/admin-email";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 /** 从 cookie 获取服务端 Supabase 客户端 */
 export function getServerSupabase(cookieHeader: string) {
@@ -24,7 +27,25 @@ export async function isAdmin(cookieHeader: string): Promise<boolean> {
   const supabase = getServerSupabase(cookieHeader);
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
-  return user.email === process.env.ADMIN_EMAIL;
+  const adminEmail = getAdminEmail();
+  return !!adminEmail && user.email === adminEmail;
+}
+
+/** Admin API 路由鉴权 + 限流，通过返回 null，拒绝返回 Response */
+export async function requireAdminApi(request: NextRequest): Promise<NextResponse | null> {
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "127.0.0.1";
+  const { allowed } = checkRateLimit(ip);
+  if (!allowed) {
+    return NextResponse.json({ error: "请求过于频繁，请稍后再试" }, { status: 429 });
+  }
+  const cookieHeader = request.headers.get("cookie") || "";
+  if (!(await isAdmin(cookieHeader))) {
+    return NextResponse.json({ error: "需要管理员权限" }, { status: 403 });
+  }
+  return null;
 }
 
 /** 获取当前用户 ID，未登录返回 null */

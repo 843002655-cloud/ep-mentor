@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.yovigo.cn";
@@ -18,20 +17,17 @@ export const metadata: Metadata = {
     siteName: "EP Mentor",
     title: "EP Mentor — 心脏电生理AI导师",
     description: "通过苏格拉底式对话，像资深术者一样思考每一份EGM",
-    images: [{ url: `${siteUrl}/og-image.png`, width: 1200, height: 630 }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
     title: "EP Mentor — 心脏电生理AI导师",
     description: "通过苏格拉底式对话，像资深术者一样思考每一份EGM",
-    images: [`${siteUrl}/og-image.png`],
+    images: ["/opengraph-image"],
   },
   icons: {
-    icon: [
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+    icon: [{ url: "/icon", sizes: "512x512", type: "image/png" }],
+    apple: [{ url: "/icon", sizes: "180x180", type: "image/png" }],
   },
   manifest: "/manifest.json",
 };
@@ -50,7 +46,6 @@ export default function RootLayout({
         >
           跳到主要内容
         </a>
-        <Script src="/pdf.min.js" strategy="afterInteractive" />
         <div id="main-content">{children}</div>
         <script
           dangerouslySetInnerHTML={{

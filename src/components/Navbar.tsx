@@ -11,13 +11,13 @@ import ThemeToggle from "@/components/ThemeToggle";
 const mainLinks = [
   { href: ROUTES.CASES, label: "病例库", short: "病例" },
   { href: ROUTES.QUIZ, label: "知识测验", short: "测验" },
-  { href: "/ai-consult", label: "AI 顾问", short: "顾问" },
-  { href: "/tools", label: "EP 工具", short: "工具" },
+  { href: ROUTES.AI_CONSULT, label: "AI 顾问", short: "顾问" },
+  { href: ROUTES.TOOLS, label: "EP 工具", short: "工具" },
   { href: ROUTES.LIBRARY, label: "资料库", short: "资料" },
 ];
 
 const dropdownItems = [
-  { href: "/profile", label: "个人中心", icon: "👤" },
+  { href: ROUTES.PROFILE, label: "个人中心", icon: "👤" },
   { href: ROUTES.DASHBOARD, label: "学习进度", icon: "📊" },
   { href: ROUTES.SUBMIT, label: "投稿案例", icon: "📝" },
   { href: ROUTES.ADMIN, label: "管理后台", icon: "⚙️", admin: true },
@@ -56,7 +56,7 @@ export default function Navbar() {
     <nav aria-label="主导航" className="border-b border-[#E8ECF0] dark:border-slate-700 bg-white dark:bg-slate-900 sticky top-0 z-50" style={{ borderBottomWidth: 0.5 }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2 shrink-0">
+          <Link href={ROUTES.HOME} className="flex items-center gap-2 shrink-0">
             <span className="text-2xl">⚡</span>
             <span className="text-lg font-bold text-[#1A2332] dark:text-slate-100 font-serif hidden sm:inline">EP <span className="text-[#1B4F8A] dark:text-blue-400">Mentor</span></span>
           </Link>

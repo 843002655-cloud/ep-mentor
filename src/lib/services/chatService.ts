@@ -113,6 +113,49 @@ export const chatService = {
     }
   },
 
+  /** 切换教学图片时生成苏格拉底式开场（不消耗对话配额） */
+  async sendFigureIntroStream(
+    messages: Message[],
+    caseContext: CaseContext,
+    caseId: string,
+    figureIndex: number,
+    figureTotal: number,
+    onChunk: (text: string) => void
+  ): Promise<string> {
+    const res = await fetch(ROUTES.API_CHAT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        caseContext: caseContext.contentJson
+          ? { ...caseContext, ...caseContext.contentJson }
+          : caseContext,
+        messages: messages.filter((m) => m.role !== "system"),
+        caseId,
+        stream: true,
+        figureIntro: true,
+        figureIndex,
+        figureTotal,
+        currentFigure: caseContext.currentFigure,
+      }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({ error: "请求失败" }));
+      throw new Error(data.error || "请求失败");
+    }
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error("流式响应不支持");
+    const decoder = new TextDecoder();
+    let fullText = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      fullText += chunk;
+      onChunk(chunk);
+    }
+    return fullText;
+  },
+
   /** AI 生成案例（管理员用） */
   async generateCase(category: string, difficulty: string, count = 1) {
     const data = await request<{ cases: object[] }>(ROUTES.API_GENERATE_CASE, {

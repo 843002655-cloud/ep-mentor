@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdmin } from "@/lib/api-utils";
+import { requireAdminApi } from "@/lib/api-utils";
 
 interface SplitCase {
   index: number;
@@ -96,9 +96,8 @@ function countFigures(text: string, caseIndex: number): number {
 
 export async function POST(request: NextRequest) {
   try {
-    if (!(await isAdmin(request.headers.get("cookie") || ""))) {
-      return NextResponse.json({ error: "需要管理员权限" }, { status: 403 });
-    }
+    const denied = await requireAdminApi(request);
+    if (denied) return denied;
 
     const { text } = await request.json();
     if (!text || text.trim().length < 5000) {

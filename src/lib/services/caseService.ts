@@ -8,6 +8,7 @@ export type CaseInput = Omit<Case, "id" | "created_at">;
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
+    cache: "no-store",
     headers: { "Content-Type": "application/json" },
     ...options,
   });
@@ -22,8 +23,8 @@ export const caseService = {
     if (filters?.category) params.set("category", filters.category);
     if (filters?.difficulty) params.set("difficulty", filters.difficulty);
     if (filters?.mapping_system) params.set("mapping_system", filters.mapping_system);
-    const data = await request<{ cases: Case[] }>(`${ROUTES.API_CASES}?${params.toString()}`);
-    return data.cases;
+    const data = await request<{ cases: Case[]; learnerCounts?: Record<string, number> }>(`${ROUTES.API_CASES}?${params.toString()}`);
+    return { cases: data.cases, learnerCounts: data.learnerCounts || {} };
   },
 
   async getCaseById(id: string) {

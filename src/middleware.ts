@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { getAdminEmail } from "@/lib/admin-email";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -19,7 +20,7 @@ export async function middleware(request: NextRequest) {
       }
     );
     const { data } = await supabase.auth.getUser();
-    isAdmin = data.user?.email === process.env.ADMIN_EMAIL;
+    isAdmin = data.user?.email === getAdminEmail();
   } catch {
     // Auth check failed — treat as unauthenticated
   }

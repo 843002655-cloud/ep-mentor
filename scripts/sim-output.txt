@@ -1,0 +1,5 @@
+ENDPOINT: GET /api/cases/cb42b4d2-efef-48f8-9ce8-414c22a7c3ca
+rawSource (140 chars): Clinical Cases in Cardiac Electrophysiology: Atrial Fibrillation and Atrial Flutter — Volume 2, Lucian Muresan (ed.), Sp
+cleanSource (58 chars): Atrial Fibrillation and Atrial Flutter — Volume 2, Case 12
+cleanSource truthy: True
+Expected UI: 📖 来源：Atrial Fibrillation and Atrial Flutter — Volume 2, Case 12

@@ -89,5 +89,10 @@ const MOCK_MODEL: ModelData = {
 };
 
 export async function GET() {
-  return NextResponse.json(MOCK_MODEL);
+  return NextResponse.json(MOCK_MODEL, {
+    headers: {
+      "X-Model-Source": "mock",
+      "Cache-Control": "public, max-age=86400",
+    },
+  });
 }

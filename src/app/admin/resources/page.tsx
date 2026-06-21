@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppLayout from "@/components/AppLayout";
+import AdminNav from "@/components/AdminNav";
 
 interface Resource { id: string; title: string; category: string; source: string; url: string; summary: string; }
 const empty = { title: "", category: "指南", source: "", url: "", summary: "" };
@@ -33,6 +34,7 @@ export default function AdminResourcesPage() {
 
   return (
     <AppLayout>
+      <AdminNav />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex items-center justify-between mb-8"><div><h1 className="text-3xl font-bold text-[#1A2332] mb-2 font-serif">资料管理</h1><p className="text-[#6B7F96]">管理学习资料库</p></div><button onClick={handleNew} className="btn-secondary">+ 添加资料</button></div>
         {(isNew || editingId) && (

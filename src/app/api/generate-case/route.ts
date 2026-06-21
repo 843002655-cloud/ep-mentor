@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
-
-const deepseek = new OpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY!,
-  baseURL: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com",
-});
-
-const MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
+import { deepseek, DEEPSEEK_MODEL } from "@/lib/deepseek";
+import { requireAdminApi } from "@/lib/api-utils";
 
 const SYSTEM_PROMPT = `# Role
 你是电生理领域的医学编辑，擅长将临床手记转化为标准化的教学病例（Case Report）。
@@ -19,6 +13,9 @@ const SYSTEM_PROMPT = `# Role
 
 export async function POST(request: NextRequest) {
   try {
+    const denied = await requireAdminApi(request);
+    if (denied) return denied;
+
     const { category, difficulty, count = 1 } = await request.json();
 
     if (!process.env.DEEPSEEK_API_KEY) {
@@ -52,23 +49,24 @@ export async function POST(request: NextRequest) {
 只输出 JSON 数组，不要包含 markdown 代码块标记。`;
 
     const response = await deepseek.chat.completions.create({
-      model: MODEL,
+      model: DEEPSEEK_MODEL,
       max_tokens: 4096,
       temperature: 0.7,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: prompt },
+        { role: "user", content: prompt + '\n\n输出必须是一个 JSON 对象，格式为：{ "cases": [...] }' },
       ],
     });
 
-    const text = response.choices[0]?.message?.content || "[]";
+    const text = response.choices[0]?.message?.content || '{"cases":[]}';
 
     const cleaned = text
       .replace(/```json\s*/g, "")
       .replace(/```\s*/g, "")
       .trim();
-    const cases = JSON.parse(cleaned);
+    const parsed = JSON.parse(cleaned);
+    const cases = Array.isArray(parsed) ? parsed : (parsed.cases || []);
 
     return NextResponse.json({ cases });
   } catch (error: unknown) {

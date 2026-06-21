@@ -1,19 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
 import { ROUTES } from "@/lib/routes";
-import { submissionService } from "@/lib/services";
+import { submissionService, authService } from "@/lib/services";
+import { replaceTo } from "@/lib/browser";
+import { SkeletonPage } from "@/components/Skeleton";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 
 export default function SubmitPage() {
   usePageTitle("投稿病例");
   const router = useRouter();
+  const [authChecked, setAuthChecked] = useState(false);
   const [form, setForm] = useState({ doctor_name: "", hospital: "", case_title: "", case_content: "" });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    authService.getUser().then((u) => {
+      if (!u) {
+        replaceTo(ROUTES.AUTH_REDIRECT(ROUTES.SUBMIT));
+        return;
+      }
+      setAuthChecked(true);
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true); setMessage("");
@@ -23,6 +36,14 @@ export default function SubmitPage() {
     } catch (err: unknown) { setMessage((err as Error).message); }
     finally { setLoading(false); }
   };
+
+  if (!authChecked) {
+    return (
+      <AppLayout>
+        <SkeletonPage variant="stat" />
+      </AppLayout>
+    );
+  }
 
   if (success) return (
     <AppLayout>

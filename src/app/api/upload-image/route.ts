@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-server";
+import { requireAdminApi } from "@/lib/api-utils";
 
 export async function POST(request: NextRequest) {
   try {
+    const denied = await requireAdminApi(request);
+    if (denied) return denied;
+
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     if (!file) return NextResponse.json({ error: "请选择文件" }, { status: 400 });

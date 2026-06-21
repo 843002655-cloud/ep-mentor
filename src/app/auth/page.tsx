@@ -38,11 +38,31 @@ function AuthForm() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("resident");
   const [interests, setInterests] = useState<string[]>([]);
+  const [resetSent, setResetSent] = useState(false);
+  const isResetMode = searchParams.get("reset") === "1";
 
   const toggleInterest = (key: string) => {
     setInterests((prev) =>
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
     );
+  };
+
+  const handleResetPassword = async () => {
+    if (!email) {
+      setMessage("请先输入注册邮箱");
+      return;
+    }
+    setLoading(true);
+    setMessage("");
+    try {
+      await authService.resetPassword(email);
+      setResetSent(true);
+      setMessage("重置邮件已发送，请查收邮箱");
+    } catch (err: unknown) {
+      setMessage("发送失败：" + ((err as Error).message || "未知错误"));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAuth = async () => {
@@ -55,10 +75,14 @@ function AuthForm() {
           interests: interests.join(","),
           registered_at: new Date().toISOString(),
         });
-        if (data.session) { navigateTo(redirect); return; }
+        if (data.session) {
+          fetch("/api/analytics", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event_type: "register", path: "/auth" }) }).catch(() => {});
+          navigateTo(redirect); return;
+        }
         if (data.user?.identities?.length === 0) {
           setMessage("该邮箱已注册，请直接登录");
         } else {
+          fetch("/api/analytics", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event_type: "register", path: "/auth" }) }).catch(() => {});
           navigateTo(redirect);
         }
       } else {
@@ -85,21 +109,27 @@ function AuthForm() {
             {isRegister ? "注册" : "登录"}
           </h1>
           <p className="text-sm text-[#6B7F96] dark:text-slate-400 text-center mb-6">
-            {isRegister ? "选择你的身份，开始个性化学习" : "欢迎回到 EP Mentor"}
+            {isResetMode
+              ? "请通过邮件中的链接设置新密码"
+              : isRegister
+                ? "选择你的身份，开始个性化学习"
+                : "欢迎回到 EP Mentor"}
           </p>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[#3D5166] dark:text-slate-300 mb-1">邮箱</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
+              <label htmlFor="auth-email" className="block text-sm font-medium text-[#3D5166] dark:text-slate-300 mb-1">邮箱</label>
+              <input id="auth-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
             </div>
+            {!isResetMode && (
             <div>
-              <label className="block text-sm font-medium text-[#3D5166] dark:text-slate-300 mb-1">密码</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} placeholder="至少 6 位" />
+              <label htmlFor="auth-password" className="block text-sm font-medium text-[#3D5166] dark:text-slate-300 mb-1">密码</label>
+              <input id="auth-password" type="password" autoComplete={isRegister ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} placeholder="至少 6 位" />
             </div>
+            )}
 
             {/* Role selection — registration only */}
-            {isRegister && (
+            {isRegister && !isResetMode && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-[#3D5166] dark:text-slate-300 mb-2">身份</label>
@@ -140,9 +170,22 @@ function AuthForm() {
               </div>
             )}
 
+            {!isResetMode && (
             <button onClick={handleAuth} disabled={loading} className="btn-primary w-full py-2.5 disabled:opacity-50">
               {loading ? "处理中..." : isRegister ? "注册" : "登录"}
             </button>
+            )}
+
+            {!isRegister && !isResetMode && !resetSent && (
+              <button
+                type="button"
+                onClick={handleResetPassword}
+                disabled={loading}
+                className="w-full text-sm text-[#1B4F8A] dark:text-blue-400 hover:underline disabled:opacity-50"
+              >
+                忘记密码？
+              </button>
+            )}
           </div>
 
           <div className="mt-6 text-center">

@@ -426,3 +426,34 @@ CREATE POLICY "Admin can read all usage" ON usage_logs
 DROP POLICY IF EXISTS "Service can upsert usage" ON usage_logs;
 CREATE POLICY "Service can upsert usage" ON usage_logs
   FOR ALL USING (true) WITH CHECK (true);
+
+-- ============================================================
+-- 10. 网站分析事件表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS analytics_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_type TEXT NOT NULL,
+  path TEXT NOT NULL DEFAULT '/',
+  ip_address TEXT,
+  user_agent TEXT DEFAULT '',
+  referrer TEXT DEFAULT '',
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  session_id TEXT,
+  duration_ms INT,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_events_type ON analytics_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_created ON analytics_events(created_at);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_case ON analytics_events((metadata->>'case_id'));
+
+ALTER TABLE analytics_events ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Service can insert analytics" ON analytics_events;
+CREATE POLICY "Service can insert analytics" ON analytics_events
+  FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Admin can read analytics" ON analytics_events;
+CREATE POLICY "Admin can read analytics" ON analytics_events
+  FOR SELECT USING (auth.email() = current_setting('app.settings.admin_email', true));
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_progress_user_case ON user_progress(user_id, case_id);

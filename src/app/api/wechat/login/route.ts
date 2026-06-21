@@ -1,69 +1,52 @@
-/**
- * 微信小程序登录 API — 预留接口
- *
- * 移植小程序时取消注释，填入你的微信 AppID 和 AppSecret：
- *
- * POST /api/wechat/login
- * Body: { code: string }
- * Response: { access_token, refresh_token, user }
- */
-
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/request-utils";
+import { exchangeWeChatCode, signInWeChatUser } from "@/lib/wechat-auth";
+import { formatZodErrors, wechatLoginSchema } from "@/lib/validators";
+import { supabaseAdmin } from "@/lib/supabase-server";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// POST /api/wechat/login — 小程序 wx.login(code) → Supabase JWT
 export async function POST(request: NextRequest) {
-  // ── 移植时取消注释以下代码 ──────────────────────────────────────
-  //
-  // const { code } = await request.json();
-  //
-  // if (!code) {
-  //   return NextResponse.json({ error: "缺少登录 code" }, { status: 400 });
-  // }
-  //
-  // const appId = process.env.WECHAT_APP_ID;
-  // const appSecret = process.env.WECHAT_APP_SECRET;
-  //
-  // if (!appId || !appSecret) {
-  //   return NextResponse.json(
-  //     { error: "微信登录未配置" },
-  //     { status: 501 }
-  //   );
-  // }
-  //
-  // // 1. 用 code 换取 openid 和 session_key
-  // const wxRes = await fetch(
-  //   `https://api.weixin.qq.com/sns/jscode2session?appid=${appId}&secret=${appSecret}&js_code=${code}&grant_type=authorization_code`
-  // );
-  // const wxData = await wxRes.json();
-  //
-  // if (wxData.errcode) {
-  //   return NextResponse.json(
-  //     { error: `微信登录失败: ${wxData.errmsg}` },
-  //     { status: 400 }
-  //   );
-  // }
-  //
-  // const { openid, unionid } = wxData;
-  //
-  // // 2. 在 Supabase 中查找或创建用户
-  // //    - 用 openid 作为唯一标识
-  // //    - 可以通过 Supabase Admin API 创建自定义 token
-  //
-  // // 3. 生成 Supabase JWT 返回
-  // return NextResponse.json({
-  //   access_token: "...",
-  //   refresh_token: "...",
-  //   user: { openid, unionid },
-  // });
-  //
-  // ──────────────────────────────────────────────────────────────────
+  try {
+    const ip = getClientIp(request);
+    const { allowed } = checkRateLimit(ip);
+    if (!allowed) {
+      return NextResponse.json({ error: "请求过于频繁，请稍后再试" }, { status: 429 });
+    }
 
-  return NextResponse.json(
-    {
-      error: "微信登录接口尚未配置",
-      message:
-        "请在移植小程序时配置 WECHAT_APP_ID 和 WECHAT_APP_SECRET 环境变量，并取消此文件的注释。",
-    },
-    { status: 501 }
-  );
+    const body = await request.json();
+    const parsed = wechatLoginSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "参数错误", details: formatZodErrors(parsed.error) },
+        { status: 400 }
+      );
+    }
+
+    const session = await exchangeWeChatCode(parsed.data.code);
+    const login = await signInWeChatUser(session);
+
+    await supabaseAdmin
+      .from("analytics_events")
+      .insert({
+        event_type: "wechat_login",
+        path: "/api/wechat/login",
+        ip_address: ip,
+        user_agent: request.headers.get("user-agent") || "",
+        referrer: request.headers.get("referer") || "",
+        user_id: login.user.id,
+        session_id: `${ip}-${new Date().toISOString().split("T")[0]}`,
+        metadata: { openid: session.openid },
+      })
+      .then(({ error }) => {
+        if (error) console.error("wechat_login analytics:", error.message);
+      });
+
+    return NextResponse.json(login);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "微信登录失败";
+    const status = message.includes("未配置") ? 503 : 401;
+    console.error("POST /api/wechat/login:", message);
+    return NextResponse.json({ error: message }, { status });
+  }
 }

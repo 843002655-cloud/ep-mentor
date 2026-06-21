@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import AppLayout from "@/components/AppLayout";
 import { caseService, authService } from "@/lib/services";
 import { SkeletonPage } from "@/components/Skeleton";
@@ -9,17 +10,18 @@ import CaseCardThumb from "@/components/CaseCardThumb";
 import EmptyState from "@/components/EmptyState";
 import { ROUTES } from "@/lib/routes";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
+import { formatSource } from "@/lib/source-utils";
 
 interface Case {
   id: string; title: string; category: string; difficulty: string;
   description: string; ecg_findings: string[]; question: string;
   hint: string; key_points: string[]; is_published: boolean;
-  mapping_system?: string;
+  mapping_system?: string; content_json?: Record<string, unknown>;
 }
 
 const categories = [
   { value: "", label: "全部" }, { value: "SVT", label: "SVT" },
-  { value: "VT", label: "VT" }, { value: "AF", label: "AF" }, { value: "AFL", label: "AFL" },
+  { value: "VT", label: "VT" }, { value: "AF", label: "AF及AFL" },
 ];
 
 const difficulties = [
@@ -27,24 +29,10 @@ const difficulties = [
   { value: "进阶", label: "进阶" }, { value: "高级", label: "高级" },
 ];
 
-const qrsTypes = [
-  { value: "", label: "全部" }, { value: "narrow", label: "窄QRS" },
-  { value: "wide", label: "宽QRS" }, { value: "flutter", label: "房扑波" },
-];
-
-const mappingSystems = [
-  { value: "", label: "全部标测系统" },
-  { value: "Carto", label: "Carto" },
-  { value: "Ensite", label: "EnSite" },
-  { value: "Rhythmia", label: "Rhythmia" },
-  { value: "Other", label: "其他" },
-];
-
 const catColors: Record<string, string> = {
   SVT: "bg-[#EBF2FA] text-[#1B4F8A] dark:bg-blue-900/30 dark:text-blue-300",
   VT: "bg-[#FDE8E8] text-[#9B2C2C] dark:bg-red-900/30 dark:text-red-300",
   AF: "bg-[#FEF3E2] text-[#854F0B] dark:bg-amber-900/30 dark:text-amber-300",
-  AFL: "bg-[#EDE9FB] text-[#4C3D9E] dark:bg-purple-900/30 dark:text-purple-300",
 };
 
 const diffColors: Record<string, string> = {
@@ -52,16 +40,6 @@ const diffColors: Record<string, string> = {
   "进阶": "bg-[#FEF3E2] text-[#854F0B] dark:bg-amber-900/30 dark:text-amber-300",
   "高级": "bg-[#FDE8E8] text-[#9B2C2C] dark:bg-red-900/30 dark:text-red-300",
 };
-
-const studyTime: Record<string, string> = { "基础": "15 分钟", "进阶": "25 分钟", "高级": "40 分钟" };
-
-function matchQrs(findings: string[], q: string): boolean {
-  if (!q) return true;
-  if (q === "narrow") return findings.some((f) => f.includes("窄QRS") || f.includes("窄 QRS"));
-  if (q === "wide") return findings.some((f) => f.includes("宽QRS") || f.includes("宽 QRS"));
-  if (q === "flutter") return findings.some((f) => f.includes("flutter") || f.includes("扑动") || f.includes("AFL"));
-  return true;
-}
 
 function keywordMatch(c: Case, kw: string): boolean {
   if (!kw) return true;
@@ -78,25 +56,42 @@ const FilterBtn = ({ active, onClick, children }: { active: boolean; onClick: ()
 );
 
 function CaseList() {
-  const searchParams = useSearchParams(); const router = useRouter();
+  const searchParams = useSearchParams();
   const [allCases, setAllCases] = useState<Case[]>([]);
+  const [learnerCounts, setLearnerCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [category, setCategory] = useState(searchParams.get("category") || "");
   const [difficulty, setDifficulty] = useState("");
-  const [qrsType, setQrsType] = useState("");
-  const [mapping, setMapping] = useState("");
   const [keyword, setKeyword] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => { setLoggedIn(authService.isLoggedIn()); }, []);
   useEffect(() => {
-    caseService.getCases({ mapping_system: mapping || undefined }).then((c) => { setAllCases(c); setLoading(false); });
-  }, [mapping]);
+    caseService.getCases()
+      .then(({ cases, learnerCounts: lc }) => {
+        setAllCases(cases);
+        setLearnerCounts(lc);
+      })
+      .catch(() => setLoadError("加载病例失败，请刷新重试"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Dynamically compute counts from actual cases
+  const totalCount = allCases.length;
+  const catCounts: Record<string, number> = {};
+  for (const c of allCases) {
+    catCounts[c.category] = (catCounts[c.category] || 0) + 1;
+  }
+  const getCatCount = (catValue: string) => {
+    if (!catValue) return totalCount;
+    if (catValue === "AF") return (catCounts["AF"] || 0) + (catCounts["AFL"] || 0);
+    return catCounts[catValue] || 0;
+  };
 
   const filtered = allCases.filter((c) => {
     if (category && c.category !== category) return false;
     if (difficulty && c.difficulty !== difficulty) return false;
-    if (!matchQrs(c.ecg_findings || [], qrsType)) return false;
     if (!keywordMatch(c, keyword)) return false;
     return true;
   });
@@ -107,8 +102,8 @@ function CaseList() {
         <h1 className="text-3xl font-bold text-[#1A2332] dark:text-slate-100 mb-2 font-serif">病例库</h1>
         <p className="text-[#6B7F96] dark:text-slate-400 mb-3">从 SVT 鉴别到室速标测，AI 导师引导你像专家一样思考每一个决策点</p>
         <p className="text-xs text-[#8FA0B4] dark:text-slate-500 mb-4 flex flex-wrap items-center gap-x-4 gap-y-1">
-          <span>⚡ 50+ 精选案例</span><span className="text-[#C5D3E0] dark:text-slate-600">|</span>
-          <span>🎯 覆盖 SVT / VT / AF / AFL</span><span className="text-[#C5D3E0] dark:text-slate-600">|</span>
+          <span>⚡ {totalCount} 精选案例</span><span className="text-[#C5D3E0] dark:text-slate-600">|</span>
+          <span>🎯 覆盖 SVT / VT / AF及AFL</span><span className="text-[#C5D3E0] dark:text-slate-600">|</span>
           <span>👨‍⚕️ AI 苏格拉底式教学</span>
         </p>
 
@@ -135,25 +130,20 @@ function CaseList() {
 
           {/* Filter bars */}
           <div className="filter-bar sm:flex-wrap sm:overflow-visible items-center">
-            {categories.map((c) => <FilterBtn key={c.value} active={category===c.value} onClick={()=>setCategory(c.value)}>{c.label}</FilterBtn>)}
+            {categories.map((c) => <FilterBtn key={c.value} active={category===c.value} onClick={()=>setCategory(c.value)}>{c.label} ({getCatCount(c.value)})</FilterBtn>)}
             <div className="w-px bg-[#E8ECF0] dark:bg-slate-700 mx-1 sm:mx-2 h-6 shrink-0 hidden sm:block" />
             {difficulties.map((d) => <FilterBtn key={d.value} active={difficulty===d.value} onClick={()=>setDifficulty(d.value)}>{d.label}</FilterBtn>)}
-            <div className="w-px bg-[#E8ECF0] dark:bg-slate-700 mx-1 sm:mx-2 h-6 shrink-0 hidden sm:block" />
-            <span className="text-xs text-[#8FA0B4] dark:text-slate-500 mr-1 shrink-0 flex items-center">QRS</span>
-            {qrsTypes.map((q) => <FilterBtn key={q.value} active={qrsType===q.value} onClick={()=>setQrsType(q.value)}>{q.label}</FilterBtn>)}
-            <div className="w-px bg-[#E8ECF0] dark:bg-slate-700 mx-1 sm:mx-2 h-6 shrink-0 hidden sm:block" />
-            <span className="text-xs text-[#8FA0B4] dark:text-slate-500 mr-1 shrink-0 flex items-center">标测</span>
-            {mappingSystems.map((m) => <FilterBtn key={m.value} active={mapping===m.value} onClick={()=>setMapping(m.value)}>{m.label}</FilterBtn>)}
           </div>
         </div>
 
-        {loading ? <SkeletonPage variant="case" count={6} /> : filtered.length===0 ? <EmptyState icon="🔍" title={keyword ? "未找到匹配的病例" : "暂无病例"} description={keyword ? "换个关键词试试？" : "病例库还没有内容，请稍后再来"} actionHref={keyword ? "" : ROUTES.CASES} actionLabel={keyword ? "" : "刷新页面"} /> : <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {loadError ? (
+          <EmptyState icon="⚠️" title="加载失败" description={loadError} actionHref={ROUTES.CASES} actionLabel="返回病例库" />
+        ) : loading ? <SkeletonPage variant="case" count={6} /> : filtered.length===0 ? <EmptyState icon="🔍" title={keyword ? "未找到匹配的病例" : "暂无病例"} description={keyword ? "换个关键词试试？" : "病例库还没有内容，请稍后再来"} actionHref={keyword ? "" : ROUTES.CASES} actionLabel={keyword ? "" : "刷新页面"} /> : <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((c) => (
-              <div
-                key={c.id} role="link" tabIndex={0}
-                onClick={() => router.push(ROUTES.CASE_DETAIL(c.id))}
-                onKeyDown={(e)=>{if(e.key==="Enter")e.currentTarget.click();}}
-                className="card group flex flex-col cursor-pointer"
+              <Link
+                key={c.id}
+                href={ROUTES.CASE_DETAIL(c.id)}
+                className="card group flex flex-col cursor-pointer hover:border-[#1B4F8A] dark:hover:border-blue-400 transition-colors"
               >
                 <CaseCardThumb category={c.category} />
 
@@ -165,9 +155,10 @@ function CaseList() {
                   <h3 className="text-base sm:text-lg font-semibold text-[#1A2332] dark:text-slate-100 mb-2 font-serif group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 transition-colors line-clamp-2">
                     {c.title}
                   </h3>
-                  <p className="text-sm text-[#6B7F96] dark:text-slate-400 mb-3" style={{display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>
+                  <p className="text-sm text-[#6B7F96] dark:text-slate-400 mb-2" style={{display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>
                     {c.description}
                   </p>
+                  {c.content_json?.source ? <p className="text-xs text-[#8FA0B4] dark:text-slate-500 mb-2 line-clamp-1">📖 {formatSource(c.content_json.source as string)}</p> : null}
 
                   {/* Key clinical info */}
                   <div className="flex flex-wrap gap-1.5 mb-3">
@@ -176,16 +167,15 @@ function CaseList() {
                     ))}
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-[#8FA0B4] dark:text-slate-500 mb-4">
-                    <span className="flex items-center gap-1"><span>⏱</span><span>{studyTime[c.difficulty]||"15 分钟"}</span></span>
-                    <span className="flex items-center gap-1"><span>👥</span><span>128 人已学习</span></span>
+                  <div className="flex items-center text-xs text-[#8FA0B4] dark:text-slate-500 mb-4">
+                    <span className="flex items-center gap-1"><span>👥</span><span>{learnerCounts[c.id] || 0} 人已学习</span></span>
                   </div>
                 </div>
 
                 <span className="block w-full text-center py-2.5 rounded-[10px] text-white text-sm font-medium bg-[#1B4F8A] dark:bg-blue-600 group-hover:bg-[#154070] dark:group-hover:bg-blue-500 transition-all duration-200">
                   AI 导师带你分析 →
                 </span>
-              </div>
+              </Link>
             ))}
           </div>
         }

@@ -22,7 +22,13 @@ export const ROUTES = {
   LIBRARY: "/library",
   AUTH: "/auth",
   DASHBOARD: "/dashboard",
+  PROFILE: "/profile",
   SUBMIT: "/submit",
+  ABOUT: "/about",
+  UPGRADE: "/upgrade",
+  TERMS: "/terms",
+  TOOLS: "/tools",
+  AI_CONSULT: "/ai-consult",
 
   // ── 子页面（带参数用工厂函数） ──
   CASE_DETAIL: (id: string) => `/cases/${id}`,
@@ -32,12 +38,14 @@ export const ROUTES = {
 
   // ── 管理后台 ──
   ADMIN_PREFIX: "/admin",
-  ADMIN: "/admin/cases",
+  ADMIN: "/admin",
   ADMIN_CASES: "/admin/cases",
+  ADMIN_CREATE_CASE: "/admin/create-case",
   ADMIN_SUBMISSIONS: "/admin/submissions",
   ADMIN_GENERATE: "/admin/generate",
   ADMIN_RESOURCES: "/admin/resources",
   ADMIN_QUIZ: "/admin/quiz",
+  ADMIN_MEMBERSHIP: "/admin/membership",
 
   // ── API ──
   API_CASES: "/api/cases",
@@ -45,10 +53,16 @@ export const ROUTES = {
   API_CHAT: "/api/chat",
   API_GENERATE_CASE: "/api/generate-case",
   API_PROGRESS: "/api/progress",
+  API_PROGRESS_COMPLETE: "/api/progress/complete",
   API_QUIZ_QUESTIONS: "/api/quiz-questions",
   API_QUIZ_QUESTION: (id: string) => `/api/quiz-questions/${id}`,
   API_RESOURCES: "/api/resources",
   API_RESOURCE: (id: string) => `/api/resources/${id}`,
   API_SUBMISSIONS: "/api/submissions",
   API_SUBMISSION: (id: string) => `/api/submissions/${id}`,
+  API_ANALYTICS: "/api/analytics",
+  API_WECHAT_LOGIN: "/api/wechat/login",
+  API_MEMBERSHIP_ACTIVATE: "/api/membership/activate",
+  API_ADMIN_ANALYTICS: "/api/admin/analytics",
+  API_PAYMENT_WECHAT_NOTIFY: "/api/payment/wechat/notify",
 } as const;

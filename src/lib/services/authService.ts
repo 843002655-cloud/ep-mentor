@@ -5,6 +5,7 @@
 import { getSupabase } from "@/lib/supabase";
 import storage from "@/lib/storage";
 import { isBrowser } from "@/lib/browser";
+import { getAdminEmail, getSupabaseAuthStorageKey } from "@/lib/admin-email";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -34,20 +35,19 @@ async function emailLogin(email: string, password: string) {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function wechatLogin(code: string) {
-  // 移植小程序时取消注释并实现：
-  // const res = await fetch("/api/wechat/login", {
-  //   method: "POST",
-  //   headers: { "Content-Type": "application/json" },
-  //   body: JSON.stringify({ code: _code }),
-  // });
-  // const data = await res.json();
-  // if (!res.ok) throw new Error(data.error || "微信登录失败");
-  // const { data: session } = await getSupabase().auth.setSession({
-  //   access_token: data.access_token,
-  //   refresh_token: data.refresh_token,
-  // });
-  // return session;
-  throw new Error("微信登录仅在小程序中可用");
+  const res = await fetch("/api/wechat/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "微信登录失败");
+  const { data: session, error } = await getSupabase().auth.setSession({
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+  });
+  if (error) throw error;
+  return session;
 }
 
 // ── Public API ─────────────────────────────────────────────────────────
@@ -104,9 +104,7 @@ export const authService = {
   /** 获取 Supabase auth token（从本地存储） */
   _getToken(): Record<string, unknown> | null {
     if (!isBrowser()) return null;
-    return storage.getJSON<Record<string, unknown>>(
-      "sb-kqoigeigwucvlpzbvboy-auth-token"
-    );
+    return storage.getJSON<Record<string, unknown>>(getSupabaseAuthStorageKey());
   },
 
   /** 检查是否登录（同步，从 storage 读取） */
@@ -122,9 +120,17 @@ export const authService = {
     if (!parsed) return false;
     const email =
       ((parsed as Record<string, Record<string, string>>)?.user?.email) || "";
-    const adminEmail =
-      process.env.NEXT_PUBLIC_ADMIN_EMAIL || "843002655@qq.com";
-    return email === adminEmail;
+    const adminEmail = getAdminEmail();
+    return !!adminEmail && email === adminEmail;
+  },
+
+  /** 发送密码重置邮件 */
+  async resetPassword(email: string) {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.yovigo.cn";
+    const { error } = await getSupabase().auth.resetPasswordForEmail(email, {
+      redirectTo: `${siteUrl}/auth?reset=1`,
+    });
+    if (error) throw error;
   },
 
   /** 监听认证状态变化 */

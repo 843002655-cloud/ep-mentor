@@ -9,7 +9,7 @@ const tabs = [
   { href: ROUTES.HOME, label: "首页", Icon: HomeIcon },
   { href: ROUTES.CASES, label: "病例库", Icon: CasesIcon },
   { href: ROUTES.QUIZ, label: "测验", Icon: QuizIcon },
-  { href: "/profile", label: "我的", Icon: ProfileIcon },
+  { href: ROUTES.PROFILE, label: "我的", Icon: ProfileIcon },
 ];
 
 export default function BottomNav() {
@@ -19,7 +19,7 @@ export default function BottomNav() {
   if (pathname.startsWith("/admin") || pathname.startsWith("/auth")) return null;
 
   return (
-    <nav aria-label="底部导航" className="md:hidden bottom-nav flex items-center justify-around px-2">
+    <nav aria-label="底部导航" className="md:hidden bottom-nav flex items-center justify-around px-2 bg-white dark:bg-slate-900 border-t border-[#E8ECF0] dark:border-slate-700">
       {tabs.map(({ href, label, Icon }) => {
         const active = pathname === href || (href !== "/" && pathname.startsWith(href));
         return (

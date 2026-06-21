@@ -43,10 +43,21 @@ DEEPSEEK_API_KEY=sk-your_key
 DEEPSEEK_BASE_URL=https://api.deepseek.com
 DEEPSEEK_MODEL=deepseek-chat
 
+# DashScope 视觉（AI 顾问图片，可选）
+DASHSCOPE_API_KEY=
+DASHSCOPE_VL_MODEL=qwen-vl-max
+
+# 站点
+NEXT_PUBLIC_SITE_URL=https://www.yovigo.cn
+
 # 管理员
 ADMIN_EMAIL=your_email@qq.com
 NEXT_PUBLIC_ADMIN_EMAIL=your_email@qq.com
+
+# 微信 / 支付（可选，见 .env.local.example）
 ```
+
+完整变量列表见 `.env.local.example`。
 
 ### 3. 创建数据库
 
@@ -56,6 +67,14 @@ NEXT_PUBLIC_ADMIN_EMAIL=your_email@qq.com
 
 ```bash
 npm run dev
+```
+
+### 5. 测试与检查
+
+```bash
+npm run lint
+npm test
+npm run build
 ```
 
 ## 日常维护流程
@@ -70,13 +89,77 @@ npm run dev
 5. /admin/cases → 下架过时病例，编辑更新内容
 ```
 
+## 多电脑协作（Git + GitHub）
+
+代码源：**https://github.com/843002655-cloud/ep-mentor**
+
+### 新电脑首次 setup
+
+```bash
+git clone https://github.com/843002655-cloud/ep-mentor.git
+cd ep-mentor
+npm install
+cp .env.local.example .env.local   # 填入密钥（与 Supabase 控制台一致）
+npm run dev
+```
+
+### 日常：换电脑前
+
+```bash
+git add .
+git commit -m "描述本次改动"
+git push origin master
+```
+
+### 日常：换电脑后
+
+```bash
+git pull origin master
+npm install    # package.json 有变化时
+npm run dev
+```
+
+`.env.local` **不要提交 Git**，用 U 盘 / 密码管理器 / 加密笔记在电脑间同步。
+
+### 功能分支（可选）
+
+```bash
+git checkout -b feature/my-change
+# ... 改完 ...
+git push -u origin feature/my-change
+# GitHub 上开 PR 合并到 master
+```
+
 ## 部署
 
-支持任何可以运行 Node.js 的服务器：
+### 推荐：服务器 git pull（与 GitHub 同步）
 
-- **Vercel:** `git push` 自动部署
-- **阿里云 + 宝塔:** PM2 守护 + Nginx 反向代理
-- **Docker:** `docker build -t ep-mentor .`
+服务器目录 `/home/admin/ep-mentor` 已是 git 仓库，推送后在服务器执行：
+
+```bash
+cd /home/admin/ep-mentor
+bash scripts/deploy-git.sh master
+```
+
+或从本机 SSH 一键部署：
+
+```bash
+ssh admin@YOUR_SERVER "cd /home/admin/ep-mentor && bash scripts/deploy-git.sh master"
+```
+
+### 备选：scp 整包（离线 / 大文件未进 Git 时）
+
+```bash
+tar --exclude=node_modules --exclude=.next --exclude=.git \
+  --exclude=batch-output --exclude=batch-output-v3 --exclude=0607 \
+  --exclude=scripts/extracted_figures --exclude=*.tar.gz \
+  -czf ep-mentor-deploy.tar.gz .
+scp ep-mentor-deploy.tar.gz admin@YOUR_SERVER:/tmp/ep-mentor-deploy.tar.gz
+ssh admin@YOUR_SERVER "bash /home/admin/ep-mentor/scripts/deploy-remote.sh"
+```
+
+- **Vercel:** `git push` 可触发自动部署
+- **阿里云 ECS:** PM2 + Nginx，端口 **3000**，域名 www.yovigo.cn
 
 ## 提醒
 

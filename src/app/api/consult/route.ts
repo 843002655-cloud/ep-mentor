@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources";
+import { deepseek, DEEPSEEK_MODEL } from "@/lib/deepseek";
 
-// ── Clients ──────────────────────────────────────────────────────────────
-
-const deepseek = new OpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY!,
-  baseURL: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com",
-});
+// ── Bailian (DashScope) client for vision ──────────────────────────────
 
 const bailian = new OpenAI({
   apiKey: process.env.DASHSCOPE_API_KEY!,
   baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
 });
 
-const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
 const VISION_MODEL = process.env.DASHSCOPE_VL_MODEL || "qwen-vl-max";
 const MAX_CONTEXT_MESSAGES = 20;
 

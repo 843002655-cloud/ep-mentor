@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
-import { isAdmin } from "@/lib/api-utils";
-
-const deepseek = new OpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY!,
-  baseURL: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com",
-});
-const MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
+import { deepseek, DEEPSEEK_MODEL } from "@/lib/deepseek";
+import { requireAdminApi } from "@/lib/api-utils";
 
 const SOURCE_BOOK =
   "Clinical Cases in Cardiac Electrophysiology: Supraventricular Arrhythmias — Volume 1, Lucian Muresan (ed.), Springer 2022";
@@ -79,9 +73,8 @@ function buildBookCasePrompt(caseTitle: string, source: string, figureCount: num
 
 export async function POST(request: NextRequest) {
   try {
-    if (!(await isAdmin(request.headers.get("cookie") || ""))) {
-      return NextResponse.json({ error: "需要管理员权限" }, { status: 403 });
-    }
+    const denied = await requireAdminApi(request);
+    if (denied) return denied;
 
     const {
       text,
@@ -113,7 +106,7 @@ export async function POST(request: NextRequest) {
     const figureCount = figs.size;
 
     const response = await deepseek.chat.completions.create({
-      model: MODEL,
+      model: DEEPSEEK_MODEL,
       max_tokens: 8192,
       temperature: 0.5,
       response_format: { type: "json_object" },

@@ -1,3 +1,5 @@
+import { EP_MENTOR_PRODUCT } from "@/lib/case-product";
+
 /** 将 AI 生成的 case 对象映射为数据库插入所需的字段 */
 export function flattenCase(
   c: Record<string, unknown>,
@@ -17,6 +19,6 @@ export function flattenCase(
     key_points: (c.key_points as string[]) || [],
     is_published: false,
     mapping_system: (c.mapping_system as string) || "",
-    content_json: { ...c, ...extra } as Record<string, unknown>,
+    content_json: { ...c, ...extra, product: EP_MENTOR_PRODUCT } as Record<string, unknown>,
   };
 }

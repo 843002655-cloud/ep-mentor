@@ -5,7 +5,7 @@ import { z, ZodError } from "zod";
 
 export const caseSchema = z.object({
   title: z.string().min(1, "标题不能为空").max(200),
-  category: z.enum(["SVT", "VT", "AF", "AFL"]),
+  category: z.enum(["SVT", "VT", "AF"]),
   difficulty: z.enum(["基础", "进阶", "高级"]),
   description: z.string().max(500).optional(),
   ecg_findings: z.union([z.array(z.unknown()), z.record(z.string(), z.unknown())]).optional(),
@@ -54,6 +54,16 @@ export const submissionSchema = z.object({
 
 export const submissionUpdateSchema = z.object({
   status: z.enum(["pending", "approved", "rejected"]),
+});
+
+export const wechatLoginSchema = z.object({
+  code: z.string().min(1, "缺少微信授权 code"),
+});
+
+export const membershipActivateSchema = z.object({
+  email: z.string().email("邮箱格式不正确"),
+  plan: z.enum(["free", "pro", "institution"]).default("pro"),
+  expiresAt: z.string().datetime().optional(),
 });
 
 // ── Validation helper ─────────────────────────────────────────────────────

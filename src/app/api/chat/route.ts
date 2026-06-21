@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import OpenAI from "openai";
-
-const deepseek = new OpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY!,
-  baseURL: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com",
-});
-
-const MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
+import { deepseek, DEEPSEEK_MODEL } from "@/lib/deepseek";
 
 const ANON_LIMIT = 20;  // 未注册用户，每天 20 次
 
@@ -231,6 +224,42 @@ ${buildCaseContext(caseContext)}
   return prompt;
 }
 
+function buildFigureIntroPrompt(
+  caseContext: Record<string, unknown>,
+  currentFigure: Record<string, unknown>,
+  figureIndex: number,
+  figureTotal: number
+): string {
+  return `# Role
+你是一位资深心脏电生理导师，正在带学员逐步分析病例。
+
+# 任务
+学员刚刚切换到本病例的第 ${figureIndex + 1}/${figureTotal} 步。
+请给出针对**当前这一步**的苏格拉底式教学开场（120-200 字）。
+
+# 要求
+1. 结合病例整体信息和当前步骤，提出与这一步相关的观察/推理引导
+2. 不要重复之前已经讨论过的内容（参考对话历史）
+3. 不要直接给出诊断或答案
+4. 必须以开放式问题结尾（不能只用是/否回答）
+5. 保留关键英文术语（AVNRT、PVI、CTI、EGM 等）
+6. 语气像导管室导师：专业、简洁
+
+# 病例信息
+${buildCaseContext(caseContext)}
+
+# 当前步骤
+- 图号/步骤：${currentFigure.figure_number || ""}
+- 标题：${currentFigure.title || ""}
+- 描述：${currentFigure.description || "（暂无文字描述，请结合病例上下文推断本步可能展示的内容）"}
+- 教学要点：${currentFigure.teaching_points || ""}
+${currentFigure.key_question && !String(currentFigure.key_question).includes("你在这张图中观察到了什么")
+  ? `- 参考引导问题：${currentFigure.key_question}`
+  : ""}
+
+直接输出开场白文本，不要 JSON，不要 markdown 标题。`;
+}
+
 // ── Helper: 获取服务端 Supabase 客户端 ─────────────────────────────
 
 function getSupabase(cookieHeader: string) {
@@ -313,9 +342,11 @@ export async function POST(request: NextRequest) {
     const {
       caseContext,
       messages,
-      caseId,
       stream = false,
       currentFigure,
+      figureIntro = false,
+      figureIndex = 0,
+      figureTotal = 1,
     } = await request.json();
 
     if (!process.env.DEEPSEEK_API_KEY) {
@@ -337,7 +368,9 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
     const userId = user?.id || null;
 
-    const quota = await checkAndIncrementQuota(userId, ip, cookieHeader);
+    const quota = figureIntro
+      ? { allowed: true, remaining: 999, total: 999 }
+      : await checkAndIncrementQuota(userId, ip, cookieHeader);
     if (!quota.allowed) {
       return NextResponse.json(
         {
@@ -355,10 +388,55 @@ export async function POST(request: NextRequest) {
       })
     );
 
+    // ── Figure intro: streaming plain text, no quota ─────────────────
+    if (figureIntro && stream && currentFigure) {
+      const streamResponse = await deepseek.chat.completions.create({
+        model: DEEPSEEK_MODEL,
+        max_tokens: 600,
+        temperature: 0.7,
+        stream: true,
+        messages: [
+          {
+            role: "system",
+            content: buildFigureIntroPrompt(
+              caseContext,
+              currentFigure,
+              figureIndex,
+              figureTotal
+            ),
+          },
+          ...conversationMessages.slice(-6),
+          {
+            role: "user",
+            content: "请给出这一步的苏格拉底式教学开场。",
+          },
+        ],
+      });
+
+      const encoder = new TextEncoder();
+      const readable = new ReadableStream({
+        async start(controller) {
+          try {
+            for await (const chunk of streamResponse) {
+              const delta = chunk.choices[0]?.delta?.content;
+              if (delta) controller.enqueue(encoder.encode(delta));
+            }
+            controller.close();
+          } catch (err) {
+            controller.error(err);
+          }
+        },
+      });
+
+      return new Response(readable, {
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+      });
+    }
+
     // ── Streaming mode: plain text, no JSON wrapper ──────────────────
     if (stream) {
       const streamResponse = await deepseek.chat.completions.create({
-        model: MODEL,
+        model: DEEPSEEK_MODEL,
         max_tokens: 2000,
         temperature: 0.7,
         stream: true,
@@ -378,17 +456,6 @@ export async function POST(request: NextRequest) {
             for await (const chunk of streamResponse) {
               const delta = chunk.choices[0]?.delta?.content;
               if (delta) controller.enqueue(encoder.encode(delta));
-            }
-            if (userId) {
-              const supabaseAdmin = getSupabaseAdmin(cookieHeader);
-              await supabaseAdmin
-                .from("user_progress")
-                .upsert(
-                  { user_id: userId, case_id: caseId, completed_at: new Date().toISOString(), score: 0 },
-                  { onConflict: "user_id,case_id" }
-                )
-                .select()
-                .maybeSingle();
             }
           } catch (e) {
             console.error("Stream error:", e);
@@ -410,7 +477,7 @@ export async function POST(request: NextRequest) {
 
     // ── Non-streaming mode: structured JSON ──────────────────────────
     const response = await deepseek.chat.completions.create({
-      model: MODEL,
+      model: DEEPSEEK_MODEL,
       max_tokens: 2000,
       temperature: 0.7,
       response_format: { type: "json_object" },
@@ -447,18 +514,6 @@ status 取值说明：
       hint = parsed.hint || "";
     } catch {
       reply = raw;
-    }
-
-    if (userId) {
-      const supabaseAdmin = getSupabaseAdmin(cookieHeader);
-      await supabaseAdmin
-        .from("user_progress")
-        .upsert(
-          { user_id: userId, case_id: caseId, completed_at: new Date().toISOString(), score: 0 },
-          { onConflict: "user_id,case_id" }
-        )
-        .select()
-        .maybeSingle();
     }
 
     return NextResponse.json({ reply, status, hint, quota });

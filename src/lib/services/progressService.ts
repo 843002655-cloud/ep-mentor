@@ -37,8 +37,18 @@ export const progressService = {
     return data;
   },
 
-  /** 记录案例完成 */
-  // markCompleted: Progress 由 chat API 自动记录，此方法预留未来扩展。
+  /** 记录病例学习完成（含匿名用户） */
+  async markCaseComplete(caseId: string, anonymousId: string) {
+    const res = await fetch(ROUTES.API_PROGRESS_COMPLETE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ caseId, anonymousId }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error((data as { error?: string }).error || "记录学习失败");
+    }
+  },
 
   /** 检查某案例是否已完成 */
   isCompleted(

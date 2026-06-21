@@ -2,8 +2,10 @@
 
 import { useState, useRef, useCallback, type DragEvent } from "react";
 import AppLayout from "@/components/AppLayout";
+import AdminNav from "@/components/AdminNav";
 import { chatService, caseService } from "@/lib/services";
 import { flattenCase } from "@/lib/case-utils";
+import PdfJsScript from "@/components/PdfJsScript";
 
 type Tab = "generate" | "pdf" | "images" | "book";
 const selClass = "w-full px-3 py-2 bg-white dark:bg-slate-800 border border-[#C5D3E0] dark:border-slate-600 rounded text-sm text-[#1A2332] dark:text-slate-100 focus:outline-none focus:border-[#1B4F8A] dark:focus:border-blue-400";
@@ -235,6 +237,8 @@ export default function AdminGeneratePage() {
 
   return (
     <AppLayout>
+      <PdfJsScript />
+      <AdminNav />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <h1 className="text-2xl sm:text-3xl font-bold text-[#1A2332] dark:text-slate-100 mb-2 font-serif">AI 生成案例</h1>
         <p className="text-sm text-[#6B7F96] dark:text-slate-400 mb-4">通过 AI 自动生成电生理教学病例</p>
@@ -247,7 +251,7 @@ export default function AdminGeneratePage() {
         {tab==="generate"&&(<div className="card mb-6">
           <h3 className="font-semibold text-[#1A2332] dark:text-slate-100 mb-3 text-sm sm:text-base">🤖 AI 智能生成病例</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <div><label className="block text-xs text-[#3D5166] dark:text-slate-300 mb-1">分类</label><select value={cat} onChange={e=>setCat(e.target.value)} className={selClass}>{["SVT","VT","AF","AFL"].map(o=><option key={o}>{o}</option>)}</select></div>
+            <div><label className="block text-xs text-[#3D5166] dark:text-slate-300 mb-1">分类</label><select value={cat} onChange={e=>setCat(e.target.value)} className={selClass}>{["SVT","VT","AF"].map(o=><option key={o}>{o}</option>)}</select></div>
             <div><label className="block text-xs text-[#3D5166] dark:text-slate-300 mb-1">难度</label><select value={diff} onChange={e=>setDiff(e.target.value)} className={selClass}>{["基础","进阶","高级"].map(o=><option key={o}>{o}</option>)}</select></div>
             <div><label className="block text-xs text-[#3D5166] dark:text-slate-300 mb-1">数量</label><input type="number" min={1} max={5} value={cnt} onChange={e=>setCnt(parseInt(e.target.value)||1)} className={selClass}/></div>
             <div className="flex items-end"><button onClick={doGenerate} disabled={genning} className="btn-primary w-full text-sm">{genning?"生成中...":"生成病例"}</button></div>

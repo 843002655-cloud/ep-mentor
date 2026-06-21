@@ -3,8 +3,32 @@ import { supabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/api-utils";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { caseSchema, formatZodErrors } from "@/lib/validators";
+import { fetchLearnerCounts } from "@/lib/learner-stats";
+import { EP_MENTOR_CASES_OR_FILTER, withEpMentorProduct } from "@/lib/case-product";
+
+const CASE_LIST_COLUMNS =
+  "id, title, category, difficulty, description, key_points, is_published, mapping_system, created_at, content_json";
+
+function dedupeCasesByTitle(rows: Record<string, unknown>[]): Record<string, unknown>[] {
+  const seen = new Map<string, Record<string, unknown>>();
+  for (const row of rows) {
+    const key = row.title as string;
+    const existing = seen.get(key);
+    if (
+      !existing ||
+      new Date(row.created_at as string) < new Date(existing.created_at as string)
+    ) {
+      seen.set(key, row);
+    }
+  }
+  return Array.from(seen.values()).sort(
+    (a, b) =>
+      new Date(b.created_at as string).getTime() - new Date(a.created_at as string).getTime()
+  );
+}
 
 // GET /api/cases — list cases (public: published only; admin: all)
+// Excludes ecg-academy product rows (shared Supabase backend)
 export async function GET(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
   const { allowed } = checkRateLimit(ip);
@@ -15,9 +39,13 @@ export async function GET(request: NextRequest) {
   const difficulty = searchParams.get("difficulty");
   const admin = await isAdmin(request.headers.get("cookie") || "");
 
+  const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "500", 10) || 500, 1), 500);
+  const offset = Math.max(parseInt(searchParams.get("offset") || "0", 10) || 0, 0);
+
   let query = supabaseAdmin
     .from("cases")
-    .select("*")
+    .select(CASE_LIST_COLUMNS)
+    .or(EP_MENTOR_CASES_OR_FILTER)
     .order("created_at", { ascending: false });
 
   const mapping = searchParams.get("mapping_system");
@@ -27,20 +55,19 @@ export async function GET(request: NextRequest) {
   if (difficulty) query = query.eq("difficulty", difficulty);
   if (mapping) query = query.eq("mapping_system", mapping);
 
-  const { data } = await query;
-
-  // 去重：同 title 只保留最早创建的
-  const seen = new Map<string, unknown>();
-  if (data) {
-    for (const row of data as Record<string, unknown>[]) {
-      const key = row.title as string;
-      if (!seen.has(key) || new Date(row.created_at as string) < new Date((seen.get(key) as Record<string, unknown>)?.created_at as string)) {
-        seen.set(key, row);
-      }
-    }
+  const { data, error } = await query;
+  if (error) {
+    console.error("GET /api/cases error:", error.message);
+    return NextResponse.json({ error: "加载病例失败" }, { status: 500 });
   }
 
-  return NextResponse.json({ cases: Array.from(seen.values()) });
+  const deduped = dedupeCasesByTitle((data || []) as Record<string, unknown>[]);
+  const total = deduped.length;
+  const result = deduped.slice(offset, offset + limit);
+  const caseIds = result.map((r) => r.id as string);
+  const learnerCounts = await fetchLearnerCounts(supabaseAdmin, caseIds);
+
+  return NextResponse.json({ cases: result, learnerCounts, total, limit, offset });
 }
 
 // POST /api/cases — admin create case
@@ -54,7 +81,13 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json({ error: "数据格式错误", details: formatZodErrors(parsed.error) }, { status: 400 });
     }
-    const { error, data } = await supabaseAdmin.from("cases").insert(parsed.data).select().single();
+    const payload = {
+      ...parsed.data,
+      content_json: withEpMentorProduct(
+        parsed.data.content_json as Record<string, unknown> | undefined
+      ),
+    };
+    const { error, data } = await supabaseAdmin.from("cases").insert(payload).select().single();
     if (error) {
       console.error("POST /api/cases DB error:", error.message);
       return NextResponse.json({ error: "创建失败，请稍后重试" }, { status: 500 });
