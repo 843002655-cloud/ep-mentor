@@ -81,7 +81,7 @@ const faqs = [
   },
   {
     q: "可以退款吗？",
-    a: "购买后 7 天内可申请全额退款（AI 对话使用未超过 50 次）。联系 843002655@qq.com。",
+    a: "购买后 7 天内可申请全额退款（AI 对话使用未超过 50 次）。联系 support@yovigo.cn。",
   },
 ];
 
@@ -156,8 +156,8 @@ export default function UpgradePage() {
           </div>
           <p className="text-xs text-[#8FA0B4] dark:text-slate-500">
             支付问题？联系{" "}
-            <a href="mailto:843002655@qq.com" className="text-[#1B4F8A] dark:text-blue-400 hover:underline">
-              843002655@qq.com
+            <a href="mailto:support@yovigo.cn" className="text-[#1B4F8A] dark:text-blue-400 hover:underline">
+              support@yovigo.cn
             </a>
           </p>
         </div>

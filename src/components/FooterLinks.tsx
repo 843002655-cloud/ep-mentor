@@ -16,7 +16,7 @@ const baseLinks = {
     { label: "关于我们", href: ROUTES.ABOUT },
     { label: "投稿病例", href: ROUTES.SUBMIT },
   ],
-  联系: [{ label: "843002655@qq.com", href: "mailto:843002655@qq.com" }],
+  联系: [{ label: "support@yovigo.cn", href: "mailto:support@yovigo.cn" }],
 };
 
 export default function FooterLinks() {

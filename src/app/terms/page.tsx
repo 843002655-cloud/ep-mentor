@@ -57,7 +57,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-[#1A2332] dark:text-slate-100 mb-3 font-serif">联系方式</h2>
             <p className="text-sm">
-              如发现侵权行为，或需要内容授权合作，请联系：843002655@qq.com
+              如发现侵权行为，或需要内容授权合作，请联系：support@yovigo.cn
             </p>
           </section>
         </div>
