@@ -210,6 +210,7 @@ export function buildFigureIntroPrompt(
 5. 不要重复前面已经讨论过的内容
 6. 保留英文术语（AVNRT、δ波、EGM 等）
 7. 语气像导管室导师，简短干脆
+${visionEnabled ? "8. 学员能看到本步骤图片，简短点出图中关键之处让学员关注（一句话即可，不要连问）" : ""}
 
 # 病例信息
 ${buildCaseContext(caseContext, { figureIndex, includeInternalRubric: false })}
