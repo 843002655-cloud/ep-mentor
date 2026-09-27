@@ -46,14 +46,15 @@ while True:
         break
 
 print(f"Total files: {len(all_files)}")
-vol1_pages = set()
+vol1_pages = {}  # pdf_pn -> [filename, ...]（支持一页多图 page_XXX_YY.png）
 for f in all_files:
     name = f.get('name', '')
-    m = re.match(r'page_(\d+)\.png', name)
+    m = re.match(r'page_(\d+)_(\d+)\.png', name)
     if m:
-        vol1_pages.add(int(m.group(1)))
+        pdf_pn = int(m.group(1))
+        vol1_pages.setdefault(pdf_pn, []).append(name)
 vol1_pages_sorted = sorted(vol1_pages)
-print(f"Page PNGs: {len(vol1_pages)}, range: {min(vol1_pages_sorted)}-{max(vol1_pages_sorted)}")
+print(f"Page PNGs: {sum(len(v) for v in vol1_pages.values())}, pages: {len(vol1_pages)}")
 
 # Step 2: Map Vol 1 PDF pages to cases
 print("\n=== Mapping Vol 1 PDF to cases ===")
@@ -90,8 +91,8 @@ for pdf_pn in sorted(vol1_pages):
     if ci is None:
         print(f"  WARNING: page {pdf_pn} in storage but not mapped to any case!")
         continue
-    filename = f"page_{pdf_pn:03d}.png"
-    case_img_pages[ci].append((pdf_pn, filename))
+    for filename in sorted(vol1_pages[pdf_pn]):
+        case_img_pages[ci].append((pdf_pn, filename))
 
 print(f"Storage pages mapped to cases: {sum(len(v) for v in case_img_pages.values())}")
 print()

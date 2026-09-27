@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-server";
-import { isAdmin } from "@/lib/api-utils";
+import { isAdmin, getAccessLevel, getUserId } from "@/lib/api-utils";
 import { caseUpdateSchema, formatZodErrors } from "@/lib/validators";
 import { isEcgAcademyCase } from "@/lib/case-product";
+import { buildLearnerKey, getLearnedCaseIds, recordCaseOpened, FREE_CASE_LIMIT } from "@/lib/learner-stats";
 
 export const dynamic = "force-dynamic";
 
@@ -12,27 +13,42 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const admin = await isAdmin(_request.headers.get("cookie") || "");
+    const accessLevel = await getAccessLevel(_request.headers.get("cookie") || "");
 
     let query = supabaseAdmin.from("cases").select("*").eq("id", params.id);
 
-    // Non-admin users can only fetch published cases
-    if (!admin) {
+    // 非管理员只能看已发布
+    if (accessLevel !== "admin") {
       query = query.eq("is_published", true);
     }
 
     const { data, error } = await query.single();
 
-    if (error) {
-      return NextResponse.json({ error: "案例不存在或未发布" }, { status: 404 });
-    }
-    if (!data) {
+    if (error || !data) {
       return NextResponse.json({ error: "案例不存在或未发布" }, { status: 404 });
     }
 
     const record = data as Record<string, unknown>;
     if (isEcgAcademyCase(record.content_json as Record<string, unknown> | undefined)) {
       return NextResponse.json({ error: "案例不存在或未发布" }, { status: 404 });
+    }
+
+    // 免费/匿名用户：按病例数限制（可学 FREE_CASE_LIMIT 个）
+    if (accessLevel !== "pro" && accessLevel !== "admin") {
+      const ip = _request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
+      const userId = await getUserId(_request.headers.get("cookie") || "");
+      const learnerId = _request.nextUrl.searchParams.get("learnerId") || "";
+      const learnerKey = buildLearnerKey(userId, learnerId, ip);
+
+      const learnedIds = await getLearnedCaseIds(supabaseAdmin, learnerKey);
+      if (!learnedIds.has(params.id) && learnedIds.size >= FREE_CASE_LIMIT) {
+        return NextResponse.json(
+          { error: `免费额度已用完（可学 ${FREE_CASE_LIMIT} 个病例），升级 Pro 解锁全部病例`, code: "FREE_LIMIT" },
+          { status: 403 }
+        );
+      }
+
+      await recordCaseOpened(supabaseAdmin, { caseId: params.id, userId, anonymousId: learnerId, ip });
     }
 
     return NextResponse.json({ case: data });

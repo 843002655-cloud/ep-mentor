@@ -92,3 +92,15 @@ export function parseWeChatPayAttach(attach: string | undefined): {
     return {};
   }
 }
+
+/** 查询用户当前会员方案（pro / institution 视为有效付费，其余按 free 处理） */
+export async function getUserPlan(userId: string): Promise<MembershipPlan> {
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .select("plan")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error || !data?.plan) return "free";
+  return data.plan as MembershipPlan;
+}

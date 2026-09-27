@@ -27,19 +27,20 @@ const tiers = [
   },
   {
     name: "Pro 会员",
-    price: "¥199",
-    period: "/年",
+    price: "¥99",
+    period: "/首期",
     icon: "⚡",
     color: "border-amber-500",
     bg: "bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30",
     btn: "bg-amber-500 hover:bg-amber-600 text-white font-bold",
-    btnText: "升级会员",
+    btnText: "立即抢购",
     highlight: true,
     features: [
+      { text: "首期特惠价，仅限前 20 人", ok: true },
       { text: "免费版全部内容", ok: true },
       { text: "无限次 AI 病例对话", ok: true },
       { text: "AI 顾问图片分析", ok: true },
-      { text: "高级 VT / 复杂房扑病例", ok: true },
+      { text: "全部病例（含 VT / 复杂房扑）", ok: true },
       { text: "学习进度报告", ok: true },
       { text: "优先获取最新病例", ok: true },
       { text: "专属技术支持", ok: true },
@@ -68,8 +69,8 @@ const tiers = [
 
 const faqs = [
   {
-    q: "试运行阶段需要付费吗？",
-    a: "目前核心功能（病例学习、AI 对话、测验）均可免费使用。会员体系已就绪，正式收费前会提前通知。",
+    q: "首期特惠是什么？",
+    a: "首期带教营限量 20 人，¥99 即可解锁全部病例、无限 AI 对话和图片分析。名额满后恢复原价 ¥199/年。",
   },
   {
     q: "如何开通会员？",
@@ -144,14 +145,17 @@ export default function UpgradePage() {
 
         <div id="wechat-pay" className="card mb-16 text-center scroll-mt-20">
           <h2 className="text-xl font-semibold text-[#1A2332] dark:text-slate-100 mb-4 font-serif">💳 微信支付</h2>
-          <p className="text-sm text-[#6B7F96] dark:text-slate-400 mb-6">
+          <p className="text-sm text-[#6B7F96] dark:text-slate-400 mb-4">
             扫码支付后备注注册邮箱，会员权益将在 24 小时内开通
+          </p>
+          <p className="text-xs text-amber-600 dark:text-amber-400 mb-4">
+            ⚠️ 上线前请把下方占位替换成你的微信收款码图片
           </p>
           <div className="w-48 h-48 mx-auto mb-4 rounded-xl flex items-center justify-center bg-white dark:bg-slate-800 border border-[#E8ECF0] dark:border-slate-700">
             <div className="text-center">
               <div className="text-4xl mb-2">📱</div>
               <p className="text-xs text-[#8FA0B4] dark:text-slate-500">扫码支付</p>
-              <p className="text-xs text-[#1B4F8A] dark:text-blue-400 font-medium mt-1">¥199 / 年</p>
+              <p className="text-xs text-[#1B4F8A] dark:text-blue-400 font-medium mt-1">¥99 / 首期</p>
             </div>
           </div>
           <p className="text-xs text-[#8FA0B4] dark:text-slate-500">

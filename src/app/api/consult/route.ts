@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources";
+import { createServerClient } from "@supabase/ssr";
 import { deepseek, DEEPSEEK_MODEL } from "@/lib/deepseek";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { getAccessLevel } from "@/lib/api-utils";
 
 // ── Bailian (DashScope) client for vision ──────────────────────────────
 
@@ -184,8 +187,47 @@ function safeError(err: unknown) {
 
 // ── POST Handler ─────────────────────────────────────────────────────────
 
+function getSupabase(cookieHeader: string) {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieHeader
+            .split(";")
+            .map((c) => {
+              const [name, ...rest] = c.trim().split("=");
+              return { name, value: rest.join("=") };
+            })
+            .filter((c) => c.name);
+        },
+        setAll() {},
+      },
+    }
+  );
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const ip =
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      request.headers.get("x-real-ip") ||
+      "127.0.0.1";
+    const rate = checkRateLimit(ip);
+    if (!rate.allowed) {
+      return NextResponse.json({ error: "请求过于频繁，请稍后再试" }, { status: 429 });
+    }
+
+    const cookieHeader = request.headers.get("cookie") || "";
+    const supabase = getSupabase(cookieHeader);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "请先登录后再使用 AI 顾问" }, { status: 401 });
+    }
+
     const { messages, stream } = await request.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -194,6 +236,17 @@ export async function POST(request: NextRequest) {
 
     // ── Route: images → Bailian vision; text-only → DeepSeek ──────────
     const needsVision = hasImages(messages);
+
+    // 图片分析为 Pro 专属（Bailian 视觉 API 成本高）
+    if (needsVision) {
+      const level = await getAccessLevel(cookieHeader);
+      if (level !== "pro" && level !== "admin") {
+        return NextResponse.json(
+          { error: "图片分析为 Pro 会员专属功能，请升级后使用" },
+          { status: 403 }
+        );
+      }
+    }
 
     if (needsVision) {
       if (!process.env.DASHSCOPE_API_KEY) {

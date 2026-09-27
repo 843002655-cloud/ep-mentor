@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
 import { authService } from "@/lib/services";
+import { getSupabase } from "@/lib/supabase";
 import { SkeletonBox } from "@/components/Skeleton";
 import { navigateTo, replaceTo } from "@/lib/browser";
+import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 
 const roles = [
@@ -33,13 +35,66 @@ function AuthForm() {
   const [isRegister, setIsRegister] = useState(searchParams.get("register") === "1");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const redirect = searchParams.get("redirect") || "/cases";
+  const redirect = sanitizeRedirectPath(searchParams.get("redirect"), "/cases");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("resident");
   const [interests, setInterests] = useState<string[]>([]);
   const [resetSent, setResetSent] = useState(false);
+  const [recoveryMode, setRecoveryMode] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
   const isResetMode = searchParams.get("reset") === "1";
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    if (code && isResetMode) {
+      const next = encodeURIComponent("/auth?reset=1");
+      window.location.replace(`/auth/callback?code=${encodeURIComponent(code)}&next=${next}`);
+      return;
+    }
+
+    if (window.location.hash.includes("type=recovery")) {
+      setRecoveryMode(true);
+    }
+
+    const supabase = getSupabase();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") setRecoveryMode(true);
+    });
+
+    if (isResetMode) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) setRecoveryMode(true);
+      });
+    }
+
+    return () => subscription.unsubscribe();
+  }, [isResetMode]);
+
+  const handleUpdatePassword = async () => {
+    if (!password || password.length < 6) {
+      setMessage("密码至少 6 位");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setMessage("两次密码不一致");
+      return;
+    }
+    setLoading(true);
+    setMessage("");
+    try {
+      await authService.updatePassword(password);
+      setMessage("密码已更新，正在跳转...");
+      navigateTo("/admin");
+    } catch (err: unknown) {
+      setMessage("设置失败：" + ((err as Error).message || "链接可能已过期，请重新申请重置邮件"));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleInterest = (key: string) => {
     setInterests((prev) =>
@@ -106,10 +161,12 @@ function AuthForm() {
       <div className="max-w-md mx-auto px-4 py-16 sm:py-24">
         <div className="card">
           <h1 className="text-2xl font-bold text-[#1A2332] dark:text-slate-100 text-center mb-2 font-serif">
-            {isRegister ? "注册" : "登录"}
+            {recoveryMode ? "设置新密码" : isRegister ? "注册" : "登录"}
           </h1>
           <p className="text-sm text-[#6B7F96] dark:text-slate-400 text-center mb-6">
-            {isResetMode
+            {recoveryMode
+              ? "请设置新的登录密码（至少 6 位）"
+              : isResetMode
               ? "请通过邮件中的链接设置新密码"
               : isRegister
                 ? "选择你的身份，开始个性化学习"
@@ -117,14 +174,22 @@ function AuthForm() {
           </p>
 
           <div className="space-y-4">
+            {!recoveryMode && (
             <div>
               <label htmlFor="auth-email" className="block text-sm font-medium text-[#3D5166] dark:text-slate-300 mb-1">邮箱</label>
               <input id="auth-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
             </div>
-            {!isResetMode && (
+            )}
+            {(recoveryMode || !isResetMode) && (
             <div>
-              <label htmlFor="auth-password" className="block text-sm font-medium text-[#3D5166] dark:text-slate-300 mb-1">密码</label>
-              <input id="auth-password" type="password" autoComplete={isRegister ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} placeholder="至少 6 位" />
+              <label htmlFor="auth-password" className="block text-sm font-medium text-[#3D5166] dark:text-slate-300 mb-1">{recoveryMode ? "新密码" : "密码"}</label>
+              <input id="auth-password" type="password" autoComplete={isRegister || recoveryMode ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} placeholder="至少 6 位" />
+            </div>
+            )}
+            {recoveryMode && (
+            <div>
+              <label htmlFor="auth-confirm-password" className="block text-sm font-medium text-[#3D5166] dark:text-slate-300 mb-1">确认新密码</label>
+              <input id="auth-confirm-password" type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputClass} placeholder="再次输入新密码" />
             </div>
             )}
 
@@ -170,13 +235,17 @@ function AuthForm() {
               </div>
             )}
 
-            {!isResetMode && (
+            {recoveryMode ? (
+            <button onClick={handleUpdatePassword} disabled={loading} className="btn-primary w-full py-2.5 disabled:opacity-50">
+              {loading ? "保存中..." : "保存新密码"}
+            </button>
+            ) : !isResetMode && (
             <button onClick={handleAuth} disabled={loading} className="btn-primary w-full py-2.5 disabled:opacity-50">
               {loading ? "处理中..." : isRegister ? "注册" : "登录"}
             </button>
             )}
 
-            {!isRegister && !isResetMode && !resetSent && (
+            {!isRegister && !isResetMode && !recoveryMode && !resetSent && (
               <button
                 type="button"
                 onClick={handleResetPassword}
@@ -189,9 +258,11 @@ function AuthForm() {
           </div>
 
           <div className="mt-6 text-center">
+            {!recoveryMode && (
             <button onClick={() => { setIsRegister(!isRegister); setMessage(""); }} className="text-sm text-[#1B4F8A] dark:text-blue-400 hover:text-[#154070] dark:hover:text-blue-300 hover:underline transition-colors">
               {isRegister ? "已有账号？去登录" : "没有账号？去注册"}
             </button>
+            )}
           </div>
         </div>
       </div>

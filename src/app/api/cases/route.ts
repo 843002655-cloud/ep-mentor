@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-server";
-import { isAdmin } from "@/lib/api-utils";
+import { isAdmin, getAccessLevel, getUserId } from "@/lib/api-utils";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { caseSchema, formatZodErrors } from "@/lib/validators";
-import { fetchLearnerCounts } from "@/lib/learner-stats";
+import { fetchLearnerCounts, buildLearnerKey, getLearnedCaseIds, FREE_CASE_LIMIT } from "@/lib/learner-stats";
 import { EP_MENTOR_CASES_OR_FILTER, withEpMentorProduct } from "@/lib/case-product";
 
 const CASE_LIST_COLUMNS =
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category");
   const difficulty = searchParams.get("difficulty");
-  const admin = await isAdmin(request.headers.get("cookie") || "");
+  const accessLevel = await getAccessLevel(request.headers.get("cookie") || "");
 
   const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "500", 10) || 500, 1), 500);
   const offset = Math.max(parseInt(searchParams.get("offset") || "0", 10) || 0, 0);
@@ -50,7 +50,8 @@ export async function GET(request: NextRequest) {
 
   const mapping = searchParams.get("mapping_system");
 
-  if (!admin) query = query.eq("is_published", true);
+  // 会员分级：admin 看全部（含未发布）；其余只看已发布
+  if (accessLevel !== "admin") query = query.eq("is_published", true);
   if (category) query = query.eq("category", category);
   if (difficulty) query = query.eq("difficulty", difficulty);
   if (mapping) query = query.eq("mapping_system", mapping);
@@ -67,7 +68,16 @@ export async function GET(request: NextRequest) {
   const caseIds = result.map((r) => r.id as string);
   const learnerCounts = await fetchLearnerCounts(supabaseAdmin, caseIds);
 
-  return NextResponse.json({ cases: result, learnerCounts, total, limit, offset });
+  // 免费额度：统计该用户已学过的病例数（供前端展示「已学 X/N」）
+  let learnedCount = 0;
+  if (accessLevel !== "pro" && accessLevel !== "admin") {
+    const userId = await getUserId(request.headers.get("cookie") || "");
+    const learnerId = searchParams.get("learnerId") || "";
+    const learnerKey = buildLearnerKey(userId, learnerId, ip);
+    learnedCount = (await getLearnedCaseIds(supabaseAdmin, learnerKey)).size;
+  }
+
+  return NextResponse.json({ cases: result, learnerCounts, total, limit, offset, learnedCount, freeLimit: FREE_CASE_LIMIT });
 }
 
 // POST /api/cases — admin create case

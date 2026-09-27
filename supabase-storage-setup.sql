@@ -21,9 +21,6 @@ BEGIN
   END LOOP;
 END $$;
 
--- 3. 创建统一策略（允许一切操作 — 因为只用 Service Role 上传，公开读取）
-CREATE POLICY "public_read_all" ON storage.objects
-  FOR SELECT USING (true);
-
-CREATE POLICY "service_all_ops" ON storage.objects
-  FOR ALL USING (true) WITH CHECK (true);
+-- 3. 公开读，写入仅通过 Service Role（服务端 API）
+CREATE POLICY "public_read_case_assets" ON storage.objects
+  FOR SELECT USING (bucket_id IN ('case-images', 'case-videos'));

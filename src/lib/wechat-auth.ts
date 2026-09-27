@@ -20,11 +20,12 @@ export interface WeChatLoginResult {
 }
 
 function getLoginSecret(): string {
-  return (
-    process.env.WECHAT_LOGIN_SECRET ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    "ep-mentor-wechat-fallback-secret"
-  );
+  const secret =
+    process.env.WECHAT_LOGIN_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!secret) {
+    throw new Error("WECHAT_LOGIN_SECRET 未配置");
+  }
+  return secret;
 }
 
 export function wechatEmailForOpenid(openid: string): string {

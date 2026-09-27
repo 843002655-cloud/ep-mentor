@@ -13,22 +13,28 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     ...options,
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "请求失败");
+  if (!res.ok) {
+    const err = new Error(data.error || "请求失败") as Error & { status?: number };
+    err.status = res.status;
+    throw err;
+  }
   return data as T;
 }
 
 export const caseService = {
-  async getCases(filters?: { category?: string; difficulty?: string; mapping_system?: string }) {
+  async getCases(filters?: { category?: string; difficulty?: string; mapping_system?: string }, learnerId?: string) {
     const params = new URLSearchParams();
     if (filters?.category) params.set("category", filters.category);
     if (filters?.difficulty) params.set("difficulty", filters.difficulty);
     if (filters?.mapping_system) params.set("mapping_system", filters.mapping_system);
-    const data = await request<{ cases: Case[]; learnerCounts?: Record<string, number> }>(`${ROUTES.API_CASES}?${params.toString()}`);
-    return { cases: data.cases, learnerCounts: data.learnerCounts || {} };
+    if (learnerId) params.set("learnerId", learnerId);
+    const data = await request<{ cases: Case[]; learnerCounts?: Record<string, number>; learnedCount?: number; freeLimit?: number }>(`${ROUTES.API_CASES}?${params.toString()}`);
+    return { cases: data.cases, learnerCounts: data.learnerCounts || {}, learnedCount: data.learnedCount || 0, freeLimit: data.freeLimit || 0 };
   },
 
-  async getCaseById(id: string) {
-    const data = await request<{ case: Case }>(ROUTES.API_CASE(id));
+  async getCaseById(id: string, anonymousId?: string) {
+    const q = anonymousId ? `?learnerId=${encodeURIComponent(anonymousId)}` : "";
+    const data = await request<{ case: Case }>(ROUTES.API_CASE(id) + q);
     return data.case;
   },
 

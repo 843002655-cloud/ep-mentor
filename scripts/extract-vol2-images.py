@@ -2,7 +2,7 @@
 Vol 2 image extraction: extract ALL embedded images per case page.
 Images are CARTO maps without Fig.X.Y captions.
 """
-import fitz, re, sys, json, time
+import fitz, re, sys, json, time, argparse
 from pathlib import Path
 from collections import defaultdict
 import requests
@@ -29,26 +29,43 @@ BUCKET = "case-images"
 
 def upload_png(png_bytes, storage_path):
     headers = {"Authorization": f"Bearer {SUPABASE_KEY}", "apikey": SUPABASE_KEY}
-    resp = requests.put(
-        f"{SUPABASE_URL}/storage/v1/object/{BUCKET}/{storage_path}",
-        headers={**headers, "Content-Type": "image/png"},
-        data=png_bytes,
-        timeout=60,
-    )
-    if resp.status_code in (200, 201):
-        return f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET}/{storage_path}"
-    resp = requests.post(
-        f"{SUPABASE_URL}/storage/v1/object/{BUCKET}/{storage_path}",
-        headers={"Authorization": f"Bearer {SUPABASE_KEY}", "apikey": SUPABASE_KEY},
-        files={"file": (Path(storage_path).name, png_bytes, "image/png")},
-        timeout=60,
-    )
-    if resp.status_code in (200, 201):
-        return f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET}/{storage_path}"
-    print(f"    Upload failed ({resp.status_code}): {resp.text[:150]}")
+    url = f"{SUPABASE_URL}/storage/v1/object/{BUCKET}/{storage_path}"
+    public_url = f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET}/{storage_path}"
+
+    # PUT 覆盖，网络错误自动重试 3 次（退避）
+    for attempt in range(3):
+        try:
+            resp = requests.put(url, headers={**headers, "Content-Type": "image/png"}, data=png_bytes, timeout=60)
+            if resp.status_code in (200, 201):
+                return public_url
+            break
+        except requests.exceptions.RequestException:
+            if attempt < 2:
+                time.sleep(2 * (attempt + 1))
+                continue
+            break
+
+    # POST fallback
+    try:
+        resp = requests.post(
+            url,
+            headers={"Authorization": f"Bearer {SUPABASE_KEY}", "apikey": SUPABASE_KEY},
+            files={"file": (Path(storage_path).name, png_bytes, "image/png")},
+            timeout=60,
+        )
+        if resp.status_code in (200, 201):
+            return public_url
+    except requests.exceptions.RequestException:
+        pass
+
+    print(f"    Upload failed: {storage_path}")
     return None
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--upload", action="store_true", help="上传覆盖线上（默认 dry-run 输出到本地）")
+    args = parser.parse_args()
+
     t0 = time.time()
     print("Opening PDF...")
     doc = fitz.open(str(PDF_PATH))
@@ -76,15 +93,24 @@ def main():
     print("\n[2] Extracting pages with embedded images...")
     case_pages = defaultdict(list)  # case -> [(page_num, image_count, png_bytes), ...]
 
+    OUT_DIR = Path(__file__).parent / "extracted_figures"
+    if not args.upload:
+        OUT_DIR.mkdir(exist_ok=True)
+
     for pn in sorted(case_page_map.keys()):
         ci = case_page_map[pn]
         page = doc[pn]
-        embedded = page.get_images()
-        if not embedded:
+        imgs = page.get_image_info()
+        if not imgs:
             continue  # Skip text-only pages
-        pix = page.get_pixmap(matrix=fitz.Matrix(2.0, 2.0))
-        png_bytes = pix.tobytes("png")
-        case_pages[ci].append((pn, png_bytes))
+        # 过滤小图（logo），只裁内容图，按 y 坐标从上到下
+        big = [im for im in imgs if (im["bbox"][2] - im["bbox"][0]) >= 200]
+        big.sort(key=lambda im: im["bbox"][1])
+        for im in big:
+            clip = fitz.Rect(im["bbox"])
+            pix = page.get_pixmap(matrix=fitz.Matrix(2.0, 2.0), clip=clip)
+            png_bytes = pix.tobytes("png")
+            case_pages[ci].append((pn, png_bytes))
 
     total_imgs = sum(len(pages) for pages in case_pages.values())
     print(f"  {total_imgs} page-images across {len(case_pages)} cases")
@@ -92,7 +118,7 @@ def main():
     for ci in sorted(case_pages):
         print(f"    Case {ci:2d}: {len(case_pages[ci]):3d} pages")
 
-    # Phase 3: Upload to Supabase
+    # Phase 3: Upload to Supabase（总是 PUT 覆盖，幂等，中断可安全重跑）
     print(f"\n[3] Uploading to Supabase Storage...")
     supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -103,16 +129,25 @@ def main():
         pages = case_pages[ci]
         for pi, (pn, png_bytes) in enumerate(pages):
             filename = f"vol2_case_{ci:02d}_page_{pi+1:02d}.png"
+            if not args.upload:
+                (OUT_DIR / filename).write_bytes(png_bytes)
+                uploaded += 1
+                continue
             storage_path = f"book-cases-vol2/{filename}"
             url = upload_png(png_bytes, storage_path)
             if url:
                 case_image_urls[ci].append({"url": url, "page": pn, "filename": filename})
                 uploaded += 1
 
-        print(f"  Case {ci:2d}: {len(case_image_urls[ci])}/{len(pages)} uploaded")
+        print(f"  Case {ci:2d}: {len(case_image_urls[ci])}/{len(pages)} images")
 
     elapsed = time.time() - t0
     print(f"  {uploaded}/{total_imgs} uploaded ({elapsed:.1f}s)")
+
+    if not args.upload:
+        print(f"\n[dry-run] 输出 {uploaded} 张图到 {OUT_DIR}/，检查质量后再 --upload")
+        doc.close()
+        return
 
     if not case_image_urls:
         print("No uploads succeeded!")
@@ -136,12 +171,14 @@ def main():
             except: content = {}
 
         # Find case index from source field
-        source = content.get("source", "")
-        m = re.search(r'Case\s+(\d+)', str(source), re.IGNORECASE)
+        source = str(content.get("source", ""))
+        source_book = str(content.get("source_book", ""))
+        # 只处理 Vol 2（Atrial）病例，避免误覆盖 Vol 1（Supraventricular）/ Vol 3（Ventricular）
+        if "Atrial" not in source and "Atrial" not in source_book:
+            continue
+        m = re.search(r'Case\s+(\d+)', source, re.IGNORECASE)
         if not m:
-            # Try source_book
-            source_book = content.get("source_book", "")
-            m = re.search(r'Case\s+(\d+)', str(source_book), re.IGNORECASE)
+            m = re.search(r'Case\s+(\d+)', source_book, re.IGNORECASE)
         if not m:
             # Try title
             m = re.match(r'病例\s*(\d+)', title)

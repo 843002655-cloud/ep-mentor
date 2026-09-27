@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminEmail } from "@/lib/admin-email";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { getUserPlan } from "@/lib/membership";
 
 /** 从 cookie 获取服务端 Supabase 客户端 */
 export function getServerSupabase(cookieHeader: string) {
@@ -64,4 +65,16 @@ export async function requireAuth(cookieHeader: string): Promise<{
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
   return { userId: user.id, supabase };
+}
+
+/** 访问等级：anonymous 未登录 / free 免费注册 / pro 付费 / admin 管理员 */
+export type AccessLevel = "anonymous" | "free" | "pro" | "admin";
+
+export async function getAccessLevel(cookieHeader: string): Promise<AccessLevel> {
+  const supabase = getServerSupabase(cookieHeader);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return "anonymous";
+  if (user.email === getAdminEmail()) return "admin";
+  const plan = await getUserPlan(user.id);
+  return plan === "pro" || plan === "institution" ? "pro" : "free";
 }

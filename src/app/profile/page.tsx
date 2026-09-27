@@ -37,7 +37,7 @@ export default function ProfilePage() {
   const [user, setUser] = useState<{ email?: string; user_metadata?: Record<string, string> } | null>(null);
   const [progress, setProgress] = useState<ProgressItem[]>([]);
   const [totalCases, setTotalCases] = useState(0);
-  const [quota, setQuota] = useState<{ used: number; remaining: number; total: number } | null>(null);
+  const [quota, setQuota] = useState<{ used: number; remaining: number; total: number; plan?: "pro" | "free" | "anonymous" } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -88,7 +88,7 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {quota && !authService.isLoggedIn() && (
+        {quota && quota.plan !== "pro" && (
           <div className="card mb-6">
             <div className="flex justify-between text-sm mb-2">
               <span className="text-[#6B7F96] dark:text-slate-400">今日 AI 对话配额</span>

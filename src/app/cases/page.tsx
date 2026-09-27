@@ -4,7 +4,8 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AppLayout from "@/components/AppLayout";
-import { caseService, authService } from "@/lib/services";
+import { caseService, authService, progressService } from "@/lib/services";
+import { getOrCreateLearnerId } from "@/lib/learner-id";
 import { SkeletonPage } from "@/components/Skeleton";
 import CaseCardThumb from "@/components/CaseCardThumb";
 import EmptyState from "@/components/EmptyState";
@@ -65,16 +66,22 @@ function CaseList() {
   const [difficulty, setDifficulty] = useState("");
   const [keyword, setKeyword] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
+  const [learnedCount, setLearnedCount] = useState(0);
+  const [freeLimit, setFreeLimit] = useState(0);
+  const [plan, setPlan] = useState<"pro" | "free" | "anonymous" | null>(null);
 
   useEffect(() => { setLoggedIn(authService.isLoggedIn()); }, []);
   useEffect(() => {
-    caseService.getCases()
-      .then(({ cases, learnerCounts: lc }) => {
+    caseService.getCases(undefined, getOrCreateLearnerId())
+      .then(({ cases, learnerCounts: lc, learnedCount: learned, freeLimit: limit }) => {
         setAllCases(cases);
         setLearnerCounts(lc);
+        setLearnedCount(learned);
+        setFreeLimit(limit);
       })
       .catch(() => setLoadError("加载病例失败，请刷新重试"))
       .finally(() => setLoading(false));
+    progressService.getQuota().then((q) => setPlan(q.plan || null)).catch(() => {});
   }, []);
 
   // Dynamically compute counts from actual cases
@@ -135,6 +142,17 @@ function CaseList() {
             {difficulties.map((d) => <FilterBtn key={d.value} active={difficulty===d.value} onClick={()=>setDifficulty(d.value)}>{d.label}</FilterBtn>)}
           </div>
         </div>
+
+        {plan && plan !== "pro" && freeLimit > 0 && (
+          <div className="mb-6 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="text-2xl shrink-0">🔒</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-[#1A2332] dark:text-slate-100">已学 {Math.min(learnedCount, freeLimit)}/{freeLimit} 个免费病例</p>
+              <p className="text-sm text-[#6B7F96] dark:text-slate-400">免费额度用完后再学新病例需升级 Pro —— 解锁全部病例 + 无限 AI 对话 + 图片分析</p>
+            </div>
+            <a href={ROUTES.UPGRADE} className="shrink-0 self-start sm:self-center text-sm font-medium bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg transition-colors">升级 Pro →</a>
+          </div>
+        )}
 
         {loadError ? (
           <EmptyState icon="⚠️" title="加载失败" description={loadError} actionHref={ROUTES.CASES} actionLabel="返回病例库" />

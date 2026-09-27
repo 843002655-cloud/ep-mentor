@@ -128,6 +128,24 @@ for cn, cid, title, created in vol3_cases:
     cj["image_urls"] = img_urls
     cj["source"] = f"{SOURCE_BOOK}, Case {cn}"
 
+    # 更新 figures（病例详情页用 figures 展示图，之前漏更新导致显示旧图）
+    figures_data = []
+    for i, (_pn, url) in enumerate(imgs):
+        figures_data.append({
+            'figure_number': f'图 {i+1}',
+            'title': f'图 {i+1}',
+            'description': '',
+            'teaching_points': '请观察图中的心电图/腔内图/CARTO标测特征',
+            'key_question': '你在这张图中观察到了什么？请描述关键特征。',
+            'image_url': url,
+        })
+    ecg = cj.get('ecg_findings') or {}
+    if isinstance(ecg, dict):
+        ecg['figures'] = figures_data
+        cj['ecg_findings'] = ecg
+    elif isinstance(ecg, list):
+        cj['ecg_findings'] = {'details': ecg, 'figures': figures_data}
+
     # Update in DB
     r = requests.patch(
         f"{SUPABASE_URL}/rest/v1/cases?id=eq.{cid}",

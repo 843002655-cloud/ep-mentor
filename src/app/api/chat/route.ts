@@ -17,17 +17,20 @@ import {
   updateTeachingState,
   type TeachingState,
 } from "@/lib/teaching-state";
+import { getUserPlan } from "@/lib/membership";
 
 const ANON_LIMIT = 20;
 
-const bailian = process.env.DASHSCOPE_API_KEY
-  ? new OpenAI({
-      apiKey: process.env.DASHSCOPE_API_KEY,
-      baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
-    })
-  : null;
-
 const VISION_MODEL = process.env.DASHSCOPE_VL_MODEL || "qwen-vl-max";
+
+function getBailian() {
+  const apiKey = process.env.DASHSCOPE_API_KEY;
+  if (!apiKey) return null;
+  return new OpenAI({
+    apiKey,
+    baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  });
+}
 
 function resolveImageUrl(url: string, request: NextRequest): string {
   if (/^https?:\/\//i.test(url)) return url;
@@ -36,7 +39,17 @@ function resolveImageUrl(url: string, request: NextRequest): string {
 }
 
 function visionAvailable(currentFigure?: Record<string, unknown>): boolean {
-  return Boolean(bailian && currentFigure?.image_url);
+  return Boolean(getBailian() && currentFigure?.image_url);
+}
+
+function isVisionApiError(err: unknown): boolean {
+  const e = err as { status?: number; message?: string };
+  const msg = e.message || "";
+  return (
+    e.status === 401 ||
+    e.status === 403 ||
+    /incorrect api key|apikey-error|invalid_api_key/i.test(msg)
+  );
 }
 
 function getSupabase(cookieHeader: string, serviceRole = false) {
@@ -64,16 +77,27 @@ async function checkAndIncrementQuota(
   ip: string,
   cookieHeader: string
 ): Promise<{ allowed: boolean; remaining: number; total: number }> {
-  if (userId) return { allowed: true, remaining: 999, total: 999 };
-
-  const supabaseAdmin = getSupabase(cookieHeader, true);
   const today = new Date().toISOString().split("T")[0];
   const limit = ANON_LIMIT;
+
+  // Pro / 机构会员：不限次数
+  if (userId) {
+    const plan = await getUserPlan(userId);
+    if (plan === "pro" || plan === "institution") {
+      return { allowed: true, remaining: 999, total: 999 };
+    }
+  }
+
+  const supabaseAdmin = getSupabase(cookieHeader, true);
+
+  // 免费注册用户按 user_id、匿名用户按 IP 计数
+  const keyField = userId ? "user_id" : "ip_address";
+  const keyValue = userId || ip;
 
   const { data: existing } = await supabaseAdmin
     .from("usage_logs")
     .select("chat_count")
-    .eq("ip_address", ip)
+    .eq(keyField, keyValue)
     .eq("date", today)
     .maybeSingle();
 
@@ -83,11 +107,19 @@ async function checkAndIncrementQuota(
   }
 
   const newCount = current + 1;
-  const { error } = await supabaseAdmin.from("usage_logs").upsert(
-    { date: today, chat_count: newCount, ip_address: ip },
-    { onConflict: "ip_address,date" }
-  );
-  if (error) console.error("Quota upsert error:", error);
+  if (userId) {
+    const { error } = await supabaseAdmin.from("usage_logs").upsert(
+      { date: today, chat_count: newCount, user_id: userId },
+      { onConflict: "user_id,date" }
+    );
+    if (error) console.error("Quota upsert error:", error);
+  } else {
+    const { error } = await supabaseAdmin.from("usage_logs").upsert(
+      { date: today, chat_count: newCount, ip_address: ip },
+      { onConflict: "ip_address,date" }
+    );
+    if (error) console.error("Quota upsert error:", error);
+  }
 
   return { allowed: true, remaining: limit - newCount, total: limit };
 }
@@ -124,29 +156,42 @@ async function createTeachingCompletion(params: {
   request: NextRequest;
   stream: boolean;
 }) {
-  const { useVision, systemPrompt, conversationMessages, currentFigure, request, stream } =
-    params;
+  const run = (withVision: boolean) => {
+    const { systemPrompt, conversationMessages, currentFigure, request, stream } = params;
+    const messages: ChatCompletionMessageParam[] = [
+      { role: "system", content: systemPrompt },
+      ...conversationMessages,
+    ];
 
-  const messages: ChatCompletionMessageParam[] = [
-    { role: "system", content: systemPrompt },
-    ...conversationMessages,
-  ];
+    if (withVision && currentFigure?.image_url) {
+      messages.push(buildVisionContextMessage(currentFigure, request));
+    }
 
-  if (useVision && currentFigure?.image_url) {
-    messages.push(buildVisionContextMessage(currentFigure, request));
+    const client = withVision ? getBailian() : null;
+    const model = withVision && client ? VISION_MODEL : DEEPSEEK_MODEL;
+    const ai = withVision && client ? client : deepseek;
+
+    return ai.chat.completions.create({
+      model,
+      max_tokens: TEACHING_MAX_TOKENS,
+      temperature: TEACHING_TEMPERATURE,
+      stream,
+      ...(stream ? {} : { response_format: { type: "json_object" as const } }),
+      messages,
+    });
+  };
+
+  if (!params.useVision) return run(false);
+
+  try {
+    return await run(true);
+  } catch (err) {
+    if (isVisionApiError(err)) {
+      console.warn("Vision API failed, falling back to DeepSeek:", (err as Error).message);
+      return run(false);
+    }
+    throw err;
   }
-
-  const client = useVision && bailian ? bailian : deepseek;
-  const model = useVision && bailian ? VISION_MODEL : DEEPSEEK_MODEL;
-
-  return client.chat.completions.create({
-    model,
-    max_tokens: TEACHING_MAX_TOKENS,
-    temperature: TEACHING_TEMPERATURE,
-    stream,
-    ...(stream ? {} : { response_format: { type: "json_object" as const } }),
-    messages,
-  });
 }
 
 function jsonOutputInstructions(): string {
@@ -193,9 +238,10 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
     const userId = user?.id || null;
 
-    const quota = figureIntro
-      ? { allowed: true, remaining: 999, total: 999 }
-      : await checkAndIncrementQuota(userId, ip, cookieHeader);
+    const quota =
+      figureIntro && currentFigure
+        ? { allowed: true, remaining: 999, total: 999 }
+        : await checkAndIncrementQuota(userId, ip, cookieHeader);
 
     if (!quota.allowed) {
       return NextResponse.json(
@@ -220,34 +266,49 @@ export async function POST(request: NextRequest) {
     const useVision = visionAvailable(currentFigure);
 
     if (figureIntro && stream && currentFigure) {
-      const systemPrompt = buildFigureIntroPrompt(
-        caseContext,
-        currentFigure,
-        figureIndex,
-        figureTotal,
-        useVision
-      );
+      const runFigureIntro = (withVision: boolean) => {
+        const systemPrompt = buildFigureIntroPrompt(
+          caseContext,
+          currentFigure,
+          figureIndex,
+          figureTotal,
+          withVision
+        );
 
-      const introMessages: ChatCompletionMessageParam[] = [
-        { role: "system", content: systemPrompt },
-        ...conversationMessages.slice(-6),
-        { role: "user", content: "请给出这一步的苏格拉底式教学开场。" },
-      ];
+        const introMessages: ChatCompletionMessageParam[] = [
+          { role: "system", content: systemPrompt },
+          ...conversationMessages.slice(-6),
+          { role: "user", content: "请给出这一步的苏格拉底式教学开场。" },
+        ];
 
-      if (useVision) {
-        introMessages.push(buildVisionContextMessage(currentFigure, request));
+        if (withVision) {
+          introMessages.push(buildVisionContextMessage(currentFigure, request));
+        }
+
+        const bailian = withVision ? getBailian() : null;
+        const client = withVision && bailian ? bailian : deepseek;
+        const model = withVision && bailian ? VISION_MODEL : DEEPSEEK_MODEL;
+
+        return client.chat.completions.create({
+          model,
+          max_tokens: 600,
+          temperature: TEACHING_TEMPERATURE,
+          stream: true,
+          messages: introMessages,
+        });
+      };
+
+      let streamResponse;
+      try {
+        streamResponse = await runFigureIntro(useVision);
+      } catch (err) {
+        if (useVision && isVisionApiError(err)) {
+          console.warn("Figure intro vision failed, falling back to DeepSeek:", (err as Error).message);
+          streamResponse = await runFigureIntro(false);
+        } else {
+          throw err;
+        }
       }
-
-      const client = useVision && bailian ? bailian : deepseek;
-      const model = useVision && bailian ? VISION_MODEL : DEEPSEEK_MODEL;
-
-      const streamResponse = await client.chat.completions.create({
-        model,
-        max_tokens: 600,
-        temperature: TEACHING_TEMPERATURE,
-        stream: true,
-        messages: introMessages,
-      });
 
       const encoder = new TextEncoder();
       const readable = new ReadableStream({
@@ -287,9 +348,12 @@ export async function POST(request: NextRequest) {
           visionEnabled: false,
         });
 
+    // useVision 仅用于提示词；实际调用在 createTeachingCompletion 内自动降级
+    const requestVision = useVision;
+
     if (stream) {
       const streamResponse = await createTeachingCompletion({
-        useVision,
+        useVision: requestVision,
         systemPrompt,
         conversationMessages,
         currentFigure,
@@ -332,7 +396,7 @@ export async function POST(request: NextRequest) {
     }
 
     const response = await createTeachingCompletion({
-      useVision,
+      useVision: requestVision,
       systemPrompt: systemPrompt + jsonOutputInstructions(),
       conversationMessages,
       currentFigure,

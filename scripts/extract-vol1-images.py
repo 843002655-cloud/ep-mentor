@@ -1,11 +1,11 @@
 """
-Vol 3 图片精确重提取 —— 修复「整页渲染」问题。
-旧版用整页 dpi=200 渲染（且一页只取第一张图），导致图里混着文字、丢图。
-新版：对每页每个嵌入图，按 bbox 精确裁剪。
+Vol 1 图片精确重提取 —— 修复「整页渲染」问题。
+旧图是整页渲染（page_XXX.png，一页一张）。新版：每页每个嵌入图按 bbox 精确裁剪，
+命名 page_XXX_YY.png（XXX=PDF 页码，YY=该页图序号）。
 
 用法：
-  python extract-vol3-images.py             # dry-run，输出到 extracted_figures/
-  python extract-vol3-images.py --upload    # 清空 book-cases-vol3 后上传裁剪图
+  python extract-vol1-images.py             # dry-run，输出到 extracted_figures/
+  python extract-vol1-images.py --upload    # 清空 book-cases/ 的旧 page_*.png 后上传
 """
 import fitz, re, sys, time, argparse
 from pathlib import Path
@@ -14,10 +14,9 @@ import requests
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-PDF = r"E:\电子书\Clinical Cases in Cardiac Electrophysiology Ventricular Arrhythmias vol.3.pdf"
+PDF = Path(__file__).parent / "svt-case-book-vol1.pdf"
 OUT_DIR = Path(__file__).parent / "extracted_figures"
 
-# ── 加载 env ──
 ENV = {}
 env_path = Path(__file__).parent.parent / ".env.local"
 with open(env_path, "r", encoding="utf-8") as f:
@@ -31,14 +30,14 @@ with open(env_path, "r", encoding="utf-8") as f:
 SUPABASE_URL = ENV["NEXT_PUBLIC_SUPABASE_URL"]
 SUPABASE_KEY = ENV["SUPABASE_SERVICE_ROLE_KEY"]
 BUCKET = "case-images"
-PREFIX = "book-cases-vol3"
-MIN_WIDTH = 150   # 过滤小图/logo
+PREFIX = "book-cases"
+MIN_WIDTH = 60    # vol1 有小 ECG 图（宽约 94），阈值设低一点
 SCALE = 2.0
 
 headers = {"Authorization": f"Bearer {SUPABASE_KEY}", "apikey": SUPABASE_KEY}
 
 
-def list_existing():
+def list_vol1_pages():
     files, offset = [], 0
     while True:
         r = requests.post(
@@ -58,13 +57,13 @@ def list_existing():
     return files
 
 
-def delete_all():
-    files = list_existing()
-    print(f"  清空 {PREFIX}/：{len(files)} 个文件")
-    for f in files:
-        name = f["name"]
+def delete_old_pages():
+    files = list_vol1_pages()
+    page_files = [f for f in files if re.match(r'page_(\d+)', f["name"])]
+    print(f"  清空 {PREFIX}/ 旧 page_*.png：{len(page_files)} 个文件")
+    for f in page_files:
         requests.delete(
-            f"{SUPABASE_URL}/storage/v1/object/{BUCKET}/{PREFIX}/{name}",
+            f"{SUPABASE_URL}/storage/v1/object/{BUCKET}/{PREFIX}/{f['name']}",
             headers=headers, timeout=60,
         )
     print("  清空完成")
@@ -96,76 +95,51 @@ def upload_png(png_bytes, storage_path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--upload", action="store_true", help="清空 book-cases-vol3 后上传")
+    parser.add_argument("--upload", action="store_true", help="清空 book-cases 旧图后上传")
     args = parser.parse_args()
 
-    doc = fitz.open(PDF)
+    doc = fitz.open(str(PDF))
     total = doc.page_count
     print(f"PDF: {total} 页")
 
-    # ── Case boundaries（"The Author(s)" + "Case N"）──
-    case_boundaries = []
+    # ── 每页内容图 bbox ──
+    page_images = {}  # pn -> [bbox, ...]
     for pn in range(total):
-        text = doc[pn].get_text("text")
-        if 'The Author(s)' in text and pn > 10:
-            m = re.search(r'Case\s+(\d+)', text)
-            if m:
-                case_boundaries.append((int(m.group(1)), pn))
-    case_boundaries.sort(key=lambda x: x[1])
-
-    case_ranges = []
-    for i, (case_num, start_pn) in enumerate(case_boundaries):
-        end_pn = case_boundaries[i + 1][1] - 1 if i < len(case_boundaries) - 1 else total - 1
-        case_ranges.append((case_num, start_pn, end_pn))
-
-    page_to_case = {}
-    for cn, sp, ep in case_ranges:
-        for pn in range(sp, ep + 1):
-            page_to_case[pn] = cn
-
-    # ── 收集每页内容图 bbox ──
-    case_images = defaultdict(list)  # case -> [(pn, bbox), ...]
-    for pn in range(total):
-        cn = page_to_case.get(pn, 0)
         imgs = doc[pn].get_image_info()
         big = [im for im in imgs
                if (im["bbox"][2] - im["bbox"][0]) >= MIN_WIDTH
                and (im["bbox"][3] - im["bbox"][1]) >= MIN_WIDTH]
         big.sort(key=lambda im: im["bbox"][1])
-        for im in big:
-            case_images[cn].append((pn, im["bbox"]))
+        if big:
+            page_images[pn] = [im["bbox"] for im in big]
 
-    total_imgs = sum(len(v) for v in case_images.values())
-    print(f"共 {total_imgs} 张内容图，{len(case_images)} 个病例")
-
-    for cn in sorted(case_images):
-        case_images[cn].sort(key=lambda x: x[0])
-        print(f"  Case {cn:2d}: {len(case_images[cn]):3d} 张图")
+    total_imgs = sum(len(v) for v in page_images.values())
+    pages_with_imgs = len(page_images)
+    print(f"共 {total_imgs} 张内容图，分布在 {pages_with_imgs} 页")
 
     if not args.upload:
         OUT_DIR.mkdir(exist_ok=True)
-        for cn in sorted(case_images):
-            for k, (pn, bbox) in enumerate(case_images[cn]):
+        for pn in sorted(page_images):
+            for k, bbox in enumerate(page_images[pn]):
                 clip = fitz.Rect(bbox)
                 pix = doc[pn].get_pixmap(matrix=fitz.Matrix(SCALE, SCALE), clip=clip)
-                fname = f"vol3_case_{cn:02d}_page_{k+1:03d}.png"
+                fname = f"page_{pn:03d}_{k+1:02d}.png"
                 (OUT_DIR / fname).write_bytes(pix.tobytes("png"))
         print(f"\n[dry-run] 输出 {total_imgs} 张图到 {OUT_DIR}/")
         doc.close()
         return
 
     # ── 清空 + 上传 ──
-    delete_all()
+    delete_old_pages()
     uploaded = 0
-    for cn in sorted(case_images):
-        for k, (pn, bbox) in enumerate(case_images[cn]):
+    for pn in sorted(page_images):
+        for k, bbox in enumerate(page_images[pn]):
             clip = fitz.Rect(bbox)
             pix = doc[pn].get_pixmap(matrix=fitz.Matrix(SCALE, SCALE), clip=clip)
-            fname = f"vol3_case_{cn:02d}_page_{k+1:03d}.png"
+            fname = f"page_{pn:03d}_{k+1:02d}.png"
             url = upload_png(pix.tobytes("png"), f"{PREFIX}/{fname}")
             if url:
                 uploaded += 1
-        print(f"  Case {cn:2d}: {len(case_images[cn])} 张图")
     print(f"\n完成：{uploaded}/{total_imgs} 张图上传")
     doc.close()
 

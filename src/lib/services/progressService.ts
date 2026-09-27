@@ -24,6 +24,7 @@ export const progressService = {
   async getQuota() {
     const data = await request<{
       used: number; remaining: number; total: number;
+      plan?: "pro" | "free" | "anonymous";
     }>("/api/quota");
     return data;
   },

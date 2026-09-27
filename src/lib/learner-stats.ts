@@ -110,3 +110,56 @@ export async function fetchLearnerCounts(
   });
   return counts;
 }
+
+/** 免费用户可完整学习的病例数 */
+export const FREE_CASE_LIMIT = 1;
+
+/** 查询某学习者已打开过的病例 ID 集合（用于免费额度计数） */
+export async function getLearnedCaseIds(
+  supabase: SupabaseClient,
+  learnerKey: string
+): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from("analytics_events")
+    .select("metadata")
+    .eq("event_type", "case_open")
+    .eq("metadata->>learner_key", learnerKey);
+
+  if (error) {
+    console.error("getLearnedCaseIds error:", error.message);
+    return new Set();
+  }
+
+  const ids = new Set<string>();
+  for (const row of data || []) {
+    const meta = row.metadata as { case_id?: string } | null;
+    if (meta?.case_id) ids.add(meta.case_id);
+  }
+  return ids;
+}
+
+/** 记录「打开病例」事件（用于免费额度计数，幂等） */
+export async function recordCaseOpened(
+  supabase: SupabaseClient,
+  opts: { caseId: string; userId: string | null; anonymousId: string; ip: string }
+): Promise<void> {
+  const learnerKey = buildLearnerKey(opts.userId, opts.anonymousId, opts.ip);
+
+  const { count, error } = await supabase
+    .from("analytics_events")
+    .select("*", { count: "exact", head: true })
+    .eq("event_type", "case_open")
+    .eq("metadata->>case_id", opts.caseId)
+    .eq("metadata->>learner_key", learnerKey);
+  if (error || (count || 0) > 0) return;
+
+  const { error: insertError } = await supabase.from("analytics_events").insert({
+    event_type: "case_open",
+    path: `/cases/${opts.caseId}`,
+    ip_address: opts.ip,
+    user_id: opts.userId,
+    session_id: learnerKey,
+    metadata: { case_id: opts.caseId, learner_key: learnerKey },
+  });
+  if (insertError) console.error("case_open event error:", insertError.message);
+}

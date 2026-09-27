@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { getUserPlan } from "@/lib/membership";
 
-const ANON_LIMIT = 20;  // 未注册用户，每天 20 次
+const ANON_LIMIT = 20;  // 免费用户（含未注册），每天 20 次
 
 export async function GET(request: NextRequest) {
   const cookieHeader = request.headers.get("cookie") || "";
@@ -30,8 +31,15 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser();
   const userId = user?.id || null;
   const today = new Date().toISOString().split("T")[0];
-  // 注册用户不限次数
-  if (userId) return NextResponse.json({ used: 0, remaining: 999, total: 999 });
+
+  // Pro / 机构会员不限次数
+  if (userId) {
+    const plan = await getUserPlan(userId);
+    if (plan === "pro" || plan === "institution") {
+      return NextResponse.json({ used: 0, remaining: 999, total: 999, plan: "pro" });
+    }
+  }
+
   const limit = ANON_LIMIT;
 
   const { data } = await supabase
@@ -47,5 +55,6 @@ export async function GET(request: NextRequest) {
     used,
     remaining: Math.max(0, limit - used),
     total: limit,
+    plan: userId ? "free" : "anonymous",
   });
 }

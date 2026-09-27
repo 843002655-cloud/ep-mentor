@@ -127,9 +127,16 @@ export const authService = {
   /** 发送密码重置邮件 */
   async resetPassword(email: string) {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.yovigo.cn";
+    const next = encodeURIComponent("/auth/reset-password");
     const { error } = await getSupabase().auth.resetPasswordForEmail(email, {
-      redirectTo: `${siteUrl}/auth?reset=1`,
+      redirectTo: `${siteUrl}/auth/callback?next=${next}`,
     });
+    if (error) throw error;
+  },
+
+  /** 邮件链接落地后设置新密码（需已处于 recovery session） */
+  async updatePassword(password: string) {
+    const { error } = await getSupabase().auth.updateUser({ password });
     if (error) throw error;
   },
 

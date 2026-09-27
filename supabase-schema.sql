@@ -424,8 +424,7 @@ DROP POLICY IF EXISTS "Admin can read all usage" ON usage_logs;
 CREATE POLICY "Admin can read all usage" ON usage_logs
   FOR SELECT USING (auth.email() = current_setting('app.settings.admin_email', true));
 DROP POLICY IF EXISTS "Service can upsert usage" ON usage_logs;
-CREATE POLICY "Service can upsert usage" ON usage_logs
-  FOR ALL USING (true) WITH CHECK (true);
+-- 服务端使用 Service Role 写入（绕过 RLS），无需 anon 策略
 
 -- ============================================================
 -- 10. 网站分析事件表
@@ -450,8 +449,7 @@ CREATE INDEX IF NOT EXISTS idx_analytics_events_case ON analytics_events((metada
 
 ALTER TABLE analytics_events ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Service can insert analytics" ON analytics_events;
-CREATE POLICY "Service can insert analytics" ON analytics_events
-  FOR INSERT WITH CHECK (true);
+-- 服务端使用 Service Role 写入（绕过 RLS），无需 anon 策略
 DROP POLICY IF EXISTS "Admin can read analytics" ON analytics_events;
 CREATE POLICY "Admin can read analytics" ON analytics_events
   FOR SELECT USING (auth.email() = current_setting('app.settings.admin_email', true));
