@@ -6,6 +6,7 @@ import { deepseek, DEEPSEEK_MODEL } from "@/lib/deepseek";
 import {
   TEACHING_MAX_TOKENS,
   TEACHING_TEMPERATURE,
+  appendDirectAnswerInstruction,
   buildFigureIntroPrompt,
   buildSystemPrompt,
   buildVisionTeachingSystemPrompt,
@@ -337,7 +338,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const systemPrompt = useVision
+    const baseSystemPrompt = useVision
       ? buildVisionTeachingSystemPrompt(caseContext, currentFigure || {}, {
           figureIndex,
           teachingState,
@@ -347,6 +348,7 @@ export async function POST(request: NextRequest) {
           teachingState,
           visionEnabled: false,
         });
+    const systemPrompt = appendDirectAnswerInstruction(baseSystemPrompt, lastUserMessage);
 
     // useVision 仅用于提示词；实际调用在 createTeachingCompletion 内自动降级
     const requestVision = useVision;
